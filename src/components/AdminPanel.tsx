@@ -1,683 +1,738 @@
-import { useState, useEffect } from 'react';
-import { X, Save, LogOut, Plus, Trash2, Check, Clock, XCircle, Users, DollarSign, ShoppingBag, Eye, Monitor, Smartphone, Settings, FileText, Palette, ChevronDown, ChevronUp, RotateCcw, Briefcase } from 'lucide-react';
-import { getSiteData, saveSiteData, resetSiteData, loginAdmin, isAdminLoggedIn, logoutAdmin, generateId, updateOrderStatus, getVisitorStats, getOrderStats } from '../data/store';
-import type { SiteData, Template, SiteSettings, PortfolioItem } from '../data/store';
-import { useLanguage } from '../context/LanguageContext';
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import {
+  X,
+  Lock,
+  BarChart3,
+  ShoppingBag,
+  Settings,
+  Users,
+  Check,
+  Trash2,
+  Plus,
+  Save,
+  LogOut,
+  RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  Eye,
+} from "lucide-react";
+import { useSiteData, type TemplateRow, type PortfolioRow } from "./ClientApp";
+import type { SiteSettingsData } from "@/db/defaults";
 
 interface AdminPanelProps {
-  isOpen: boolean;
   onClose: () => void;
 }
 
-const AdminPanel = ({ isOpen, onClose }: AdminPanelProps) => {
-  const { t } = useLanguage();
-  const [isLoggedIn, setIsLoggedIn] = useState(isAdminLoggedIn());
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [data, setData] = useState<SiteData>(getSiteData());
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [saved, setSaved] = useState(false);
+type Tab = "dashboard" | "orders" | "templates" | "portfolio" | "settings";
+
+interface OrderRow {
+  id: number;
+  externalId: string;
+  templateId: string;
+  templateName: string;
+  email: string;
+  txHash: string;
+  amount: number;
+  status: string;
+  createdAt: string | null;
+  completedAt: string | null;
+}
+
+interface VisitorStats {
+  total: number;
+  today: number;
+  week: number;
+  month: number;
+  recentVisitors: { id: number; page: string; device: string | null; referrer: string | null; createdAt: string | null }[];
+}
+
+interface OrderStats {
+  total: number;
+  pending: number;
+  completed: number;
+  rejected: number;
+  revenue: number;
+}
+
+export default function AdminPanel({ onClose }: AdminPanelProps) {
+  const { settings: initialSettings, refreshData } = useSiteData();
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [password, setPassword] = useState("");
+  const [storedPassword, setStoredPassword] = useState("");
+  const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+
+  // Data states
+  const [settingsData, setSettingsData] = useState<SiteSettingsData>(initialSettings);
+  const [ordersData, setOrdersData] = useState<OrderRow[]>([]);
+  const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null);
+  const [orderStats, setOrderStats] = useState<OrderStats | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    if (isOpen) {
-      setData(getSiteData());
-      setIsLoggedIn(isAdminLoggedIn());
-    }
-  }, [isOpen]);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (loginAdmin(password)) {
-      setIsLoggedIn(true);
-      setLoginError('');
-      setPassword('');
-    } else {
-      setLoginError(t('admin.wrong'));
-    }
-  };
-
-  const handleLogout = () => {
-    logoutAdmin();
-    setIsLoggedIn(false);
-    onClose();
-  };
-
-  const handleSave = () => {
-    saveSiteData(data);
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      window.location.reload();
-    }, 1500);
-  };
-
-  const handleReset = () => {
-    if (confirm('Reset all data to default? This cannot be undone.')) {
-      resetSiteData();
-      setData(getSiteData());
-      window.location.reload();
-    }
-  };
-
-  const updateSettings = (updates: Partial<SiteSettings>) => {
-    setData({ ...data, settings: { ...data.settings, ...updates } });
-  };
-
   const toggleSection = (key: string) => {
-    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+    setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const visitorStats = getVisitorStats();
-  const orderStats = getOrderStats();
+  const handleLogin = async () => {
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        setLoggedIn(true);
+        setStoredPassword(password);
+        setError("");
+      } else {
+        setError("Wrong password");
+      }
+    } catch {
+      setError("Connection error");
+    }
+  };
 
-  if (!isOpen) return null;
+  const loadDashboardData = useCallback(async () => {
+    if (!storedPassword) return;
+    try {
+      const [vRes, oRes] = await Promise.all([
+        fetch(`/api/visitors?password=${encodeURIComponent(storedPassword)}`),
+        fetch("/api/orders?stats=true"),
+      ]);
+      if (vRes.ok) setVisitorStats(await vRes.json());
+      if (oRes.ok) setOrderStats(await oRes.json());
+    } catch {
+      // ignore
+    }
+  }, [storedPassword]);
 
-  const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: <Eye size={16} /> },
-    { id: 'orders', label: 'Orders', icon: <ShoppingBag size={16} /> },
-    { id: 'hero', label: 'Hero', icon: <FileText size={16} /> },
-    { id: 'about', label: 'About', icon: <FileText size={16} /> },
-    { id: 'portfolio', label: 'My Work', icon: <Briefcase size={16} /> },
-    { id: 'templates', label: 'Templates', icon: <Palette size={16} /> },
-    { id: 'skills', label: 'Skills', icon: <FileText size={16} /> },
-    { id: 'settings', label: 'Settings', icon: <Settings size={16} /> },
-    { id: 'analytics', label: 'Analytics', icon: <Users size={16} /> },
+  const loadOrders = useCallback(async () => {
+    try {
+      const res = await fetch("/api/orders");
+      if (res.ok) setOrdersData(await res.json());
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const loadSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/settings");
+      if (res.ok) setSettingsData(await res.json());
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    if (loggedIn) {
+      loadDashboardData();
+      loadOrders();
+      loadSettings();
+    }
+  }, [loggedIn, loadDashboardData, loadOrders, loadSettings]);
+
+  const updateSettings = (partial: Partial<SiteSettingsData>) => {
+    setSettingsData((prev) => ({ ...prev, ...partial }));
+  };
+
+  const saveSettings = async () => {
+    setSaving(true);
+    setSaveMsg("");
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...settingsData, password: storedPassword }),
+      });
+      if (res.ok) {
+        setSaveMsg("✅ Settings saved to database!");
+        await refreshData();
+        setTimeout(() => setSaveMsg(""), 3000);
+      } else {
+        setSaveMsg("❌ Failed to save");
+      }
+    } catch {
+      setSaveMsg("❌ Connection error");
+    }
+    setSaving(false);
+  };
+
+  const updateOrderStatus = async (orderId: number, status: string) => {
+    await fetch("/api/orders", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: storedPassword, id: orderId, status }),
+    });
+    loadOrders();
+    loadDashboardData();
+  };
+
+  if (!loggedIn) {
+    return (
+      <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-slate-900 rounded-2xl p-8 w-full max-w-sm border border-slate-700">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Lock size={20} /> Admin Login
+            </h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-white">
+              <X size={20} />
+            </button>
+          </div>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            placeholder="Password"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white mb-4 focus:border-blue-500 focus:outline-none"
+          />
+          {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+          <button
+            onClick={handleLogin}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          >
+            Enter
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    { key: "dashboard", label: "Dashboard", icon: <BarChart3 size={18} /> },
+    { key: "orders", label: "Orders", icon: <ShoppingBag size={18} /> },
+    { key: "templates", label: "Templates", icon: <Eye size={18} /> },
+    { key: "portfolio", label: "Portfolio", icon: <Users size={18} /> },
+    { key: "settings", label: "Settings", icon: <Settings size={18} /> },
   ];
 
   return (
-    <div className="fixed inset-0 z-[100] flex">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative ml-auto w-full max-w-3xl bg-slate-900 h-full overflow-y-auto shadow-2xl">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">⚙️ Admin Panel</h2>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
-            <X size={20} />
+    <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex">
+      {/* Sidebar */}
+      <div className="w-56 bg-slate-900 border-r border-slate-800 flex flex-col">
+        <div className="p-4 border-b border-slate-800">
+          <h2 className="font-bold text-lg">Admin Panel</h2>
+          <p className="text-xs text-emerald-400 mt-1">💾 Database Connected</p>
+        </div>
+        <nav className="flex-1 p-2 space-y-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                activeTab === tab.key
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800"
+              }`}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </nav>
+        <div className="p-2 border-t border-slate-800">
+          <button
+            onClick={() => {
+              setLoggedIn(false);
+              onClose();
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-red-900/30"
+          >
+            <LogOut size={18} /> Logout
           </button>
         </div>
+      </div>
 
-        {!isLoggedIn ? (
-          <div className="p-8 flex items-center justify-center min-h-[60vh]">
-            <form onSubmit={handleLogin} className="w-full max-w-sm space-y-6">
-              <div className="text-center">
-                <div className="text-5xl mb-4">🔐</div>
-                <h3 className="text-2xl font-bold text-white mb-2">{t('admin.login')}</h3>
-              </div>
-              <div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-                  placeholder={t('admin.password')}
-                  autoFocus
-                />
-                {loginError && <p className="text-red-400 text-sm mt-2">{loginError}</p>}
-              </div>
-              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg">
-                {t('admin.enter')}
-              </button>
-            </form>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/50">
+          <h2 className="text-lg font-bold capitalize">{activeTab}</h2>
+          <div className="flex items-center gap-2">
+            {saveMsg && <span className="text-sm">{saveMsg}</span>}
+            <button onClick={onClose} className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+              <X size={20} />
+            </button>
           </div>
-        ) : (
-          <>
-            {/* Tabs */}
-            <div className="flex overflow-x-auto border-b border-slate-800 px-2 gap-1">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-3 text-xs font-medium whitespace-nowrap transition-colors border-b-2 flex items-center gap-1.5 ${
-                    activeTab === tab.id ? 'text-blue-400 border-blue-400' : 'text-slate-400 border-transparent hover:text-white'
-                  }`}
-                >
-                  {tab.icon}
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+        </div>
 
-            <div className="p-6">
-              {/* DASHBOARD */}
-              {activeTab === 'dashboard' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <StatCard icon={<Users className="text-blue-400" />} label="Total Visitors" value={visitorStats.total} />
-                    <StatCard icon={<Eye className="text-emerald-400" />} label="Today" value={visitorStats.today} />
-                    <StatCard icon={<ShoppingBag className="text-purple-400" />} label="Pending Orders" value={orderStats.pending} />
-                    <StatCard icon={<DollarSign className="text-amber-400" />} label="Revenue" value={`$${orderStats.revenue}`} />
-                  </div>
-                  
-                  <div className="bg-slate-800 rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-white mb-4">Device Stats</h3>
-                    <div className="flex gap-6">
-                      <div className="flex items-center gap-2">
-                        <Monitor className="text-blue-400" size={20} />
-                        <span className="text-slate-400">Desktop:</span>
-                        <span className="text-white font-bold">{visitorStats.byDevice.desktop}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Smartphone className="text-emerald-400" size={20} />
-                        <span className="text-slate-400">Mobile:</span>
-                        <span className="text-white font-bold">{visitorStats.byDevice.mobile}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ORDERS */}
-              {activeTab === 'orders' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <StatCard icon={<Clock className="text-amber-400" />} label="Pending" value={orderStats.pending} />
-                    <StatCard icon={<Check className="text-emerald-400" />} label="Completed" value={orderStats.completed} />
-                    <StatCard icon={<DollarSign className="text-blue-400" />} label="Revenue" value={`$${orderStats.revenue}`} />
-                  </div>
-
-                  {data.orders.length === 0 ? (
-                    <div className="text-center py-12 text-slate-500">No orders yet</div>
-                  ) : (
-                    <div className="space-y-4">
-                      {data.orders.map((order) => (
-                        <div key={order.id} className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <h4 className="font-bold text-white">{order.templateName}</h4>
-                              <p className="text-sm text-slate-400">{order.email}</p>
-                            </div>
-                            <div className="text-right">
-                              <span className="text-emerald-400 font-bold">${order.amount} USDT</span>
-                              <p className="text-xs text-slate-500">{new Date(order.createdAt).toLocaleDateString()}</p>
-                            </div>
-                          </div>
-                          <div className="text-xs text-slate-500 mb-3 font-mono break-all bg-slate-900 p-2 rounded">
-                            TX: {order.txHash}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              order.status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
-                              order.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' :
-                              'bg-red-500/20 text-red-400'
-                            }`}>
-                              {order.status.toUpperCase()}
-                            </span>
-                            {order.status === 'pending' && (
-                              <>
-                                <button
-                                  onClick={() => { updateOrderStatus(order.id, 'completed'); setData(getSiteData()); }}
-                                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded flex items-center gap-1"
-                                >
-                                  <Check size={12} /> Approve
-                                </button>
-                                <button
-                                  onClick={() => { updateOrderStatus(order.id, 'rejected'); setData(getSiteData()); }}
-                                  className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded flex items-center gap-1"
-                                >
-                                  <XCircle size={12} /> Reject
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* HERO SECTION */}
-              {activeTab === 'hero' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-white mb-4">Hero Section</h3>
-                  <InputField label="Greeting Text" value={data.settings.heroGreeting} onChange={(v) => updateSettings({ heroGreeting: v })} />
-                  <InputField label="Your Name" value={data.settings.heroName} onChange={(v) => updateSettings({ heroName: v })} />
-                  <InputField label="Title / Job" value={data.settings.heroTitle} onChange={(v) => updateSettings({ heroTitle: v })} />
-                  <TextAreaField label="Description" value={data.settings.heroDescription} onChange={(v) => updateSettings({ heroDescription: v })} />
-                  
-                  <h4 className="text-md font-bold text-white mt-6 pt-4 border-t border-slate-700">Profile Image</h4>
-                  
-                  {/* Profile Image with Position Control */}
-                  <div className="bg-slate-800 p-4 rounded-lg space-y-4">
-                    <div className="flex gap-4 items-start">
-                      <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-slate-700 flex-shrink-0 relative">
-                        <img 
-                          src={data.settings.profileImage || '/images/profile.jpg'} 
-                          alt="Profile" 
-                          className="w-full h-full object-cover"
-                          style={{ objectPosition: `${data.settings.profileImageX ?? 50}% ${data.settings.profileImageY ?? 50}%` }}
-                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200'; }}
-                        />
-                      </div>
-                      <div className="flex-1 space-y-3">
-                        <input
-                          value={data.settings.profileImage}
-                          onChange={(e) => updateSettings({ profileImage: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm"
-                          placeholder="Image URL"
-                        />
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs text-slate-400 mb-1">Horizontal Position (X): {data.settings.profileImageX ?? 50}%</label>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={data.settings.profileImageX ?? 50}
-                              onChange={(e) => updateSettings({ profileImageX: Number(e.target.value) })}
-                              className="w-full accent-blue-500"
-                            />
-                            <div className="flex justify-between text-xs text-slate-500">
-                              <span>Left</span>
-                              <span>Right</span>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs text-slate-400 mb-1">Vertical Position (Y): {data.settings.profileImageY ?? 50}%</label>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={data.settings.profileImageY ?? 50}
-                              onChange={(e) => updateSettings({ profileImageY: Number(e.target.value) })}
-                              className="w-full accent-blue-500"
-                            />
-                            <div className="flex justify-between text-xs text-slate-500">
-                              <span>Top</span>
-                              <span>Bottom</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <h4 className="text-md font-bold text-white mt-6 pt-4 border-t border-slate-700">Background Image</h4>
-                  
-                  {/* Background Image with Position Control */}
-                  <div className="bg-slate-800 p-4 rounded-lg space-y-4">
-                    <div className="w-full h-40 rounded-lg overflow-hidden border border-slate-700 relative">
-                      <img 
-                        src={data.settings.heroBackground || 'https://via.placeholder.com/1920x1080'} 
-                        alt="Background" 
-                        className="w-full h-full object-cover opacity-60"
-                        style={{ objectPosition: `${data.settings.heroBackgroundX ?? 50}% ${data.settings.heroBackgroundY ?? 50}%` }}
-                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1920x1080'; }}
-                      />
-                    </div>
-                    <input
-                      value={data.settings.heroBackground}
-                      onChange={(e) => updateSettings({ heroBackground: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm"
-                      placeholder="Background Image URL"
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">Horizontal (X): {data.settings.heroBackgroundX ?? 50}%</label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={data.settings.heroBackgroundX ?? 50}
-                          onChange={(e) => updateSettings({ heroBackgroundX: Number(e.target.value) })}
-                          className="w-full accent-blue-500"
-                        />
-                        <div className="flex justify-between text-xs text-slate-500">
-                          <span>Left</span>
-                          <span>Right</span>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">Vertical (Y): {data.settings.heroBackgroundY ?? 50}%</label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={data.settings.heroBackgroundY ?? 50}
-                          onChange={(e) => updateSettings({ heroBackgroundY: Number(e.target.value) })}
-                          className="w-full accent-blue-500"
-                        />
-                        <div className="flex justify-between text-xs text-slate-500">
-                          <span>Top</span>
-                          <span>Bottom</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <h4 className="text-md font-bold text-white mt-6 pt-4 border-t border-slate-700">Social Links</h4>
-                  <InputField label="GitHub URL" value={data.settings.githubUrl} onChange={(v) => updateSettings({ githubUrl: v })} />
-                  <InputField label="Telegram URL" value={data.settings.telegramUrl} onChange={(v) => updateSettings({ telegramUrl: v })} placeholder="https://t.me/username" />
-                  <InputField label="Instagram URL" value={data.settings.instagramUrl} onChange={(v) => updateSettings({ instagramUrl: v })} />
-                  <InputField label="LinkedIn URL" value={data.settings.linkedinUrl} onChange={(v) => updateSettings({ linkedinUrl: v })} />
-                  <InputField label="Twitter URL" value={data.settings.twitterUrl} onChange={(v) => updateSettings({ twitterUrl: v })} />
-                </div>
-              )}
-
-              {/* ABOUT SECTION */}
-              {activeTab === 'about' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-white mb-4">About Section</h3>
-                  <InputField label="Section Title" value={data.settings.aboutTitle} onChange={(v) => updateSettings({ aboutTitle: v })} />
-                  <TextAreaField label="Paragraph 1" value={data.settings.aboutParagraph1} onChange={(v) => updateSettings({ aboutParagraph1: v })} />
-                  <TextAreaField label="Paragraph 2" value={data.settings.aboutParagraph2} onChange={(v) => updateSettings({ aboutParagraph2: v })} />
-                  
-                  <h4 className="text-md font-bold text-white mt-6 pt-4 border-t border-slate-700">Statistics</h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    <InputField label="Years Experience" value={data.settings.yearsExperience} onChange={(v) => updateSettings({ yearsExperience: v })} />
-                    <InputField label="Templates Sold" value={data.settings.templatesSold} onChange={(v) => updateSettings({ templatesSold: v })} />
-                    <InputField label="Happy Clients" value={data.settings.happyClients} onChange={(v) => updateSettings({ happyClients: v })} />
-                  </div>
-
-                  <h4 className="text-md font-bold text-white mt-6 pt-4 border-t border-slate-700">Services</h4>
-                  {data.settings.services.map((service, i) => (
-                    <div key={i} className="bg-slate-800 p-4 rounded-lg space-y-2">
-                      <div className="flex justify-between items-center">
-                        <button onClick={() => toggleSection(`service-${i}`)} className="flex items-center gap-2 text-white font-medium">
-                          {expandedSections[`service-${i}`] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                          {service.title || 'Service'}
-                        </button>
-                        <button onClick={() => {
-                          const newServices = data.settings.services.filter((_, idx) => idx !== i);
-                          updateSettings({ services: newServices });
-                        }} className="text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
-                      </div>
-                      {expandedSections[`service-${i}`] && (
-                        <div className="space-y-2 pt-2">
-                          <input value={service.title} onChange={(e) => {
-                            const newServices = [...data.settings.services];
-                            newServices[i] = { ...newServices[i], title: e.target.value };
-                            updateSettings({ services: newServices });
-                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Title" />
-                          <textarea value={service.description} onChange={(e) => {
-                            const newServices = [...data.settings.services];
-                            newServices[i] = { ...newServices[i], description: e.target.value };
-                            updateSettings({ services: newServices });
-                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm min-h-[60px]" placeholder="Description" />
-                          <select value={service.iconType} onChange={(e) => {
-                            const newServices = [...data.settings.services];
-                            newServices[i] = { ...newServices[i], iconType: e.target.value };
-                            updateSettings({ services: newServices });
-                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm">
-                            <option value="layout">Layout</option>
-                            <option value="code">Code</option>
-                            <option value="database">Database</option>
-                            <option value="smartphone">Smartphone</option>
-                          </select>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <button onClick={() => updateSettings({ services: [...data.settings.services, { title: '', description: '', iconType: 'code' }] })} className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1">
-                    <Plus size={14} /> Add Service
-                  </button>
-                </div>
-              )}
-
-              {/* PORTFOLIO / MY WORK */}
-              {activeTab === 'portfolio' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-white mb-4">My Work / Portfolio ({data.portfolio?.length || 0})</h3>
-                  <p className="text-slate-400 text-sm mb-4">Add your projects and work here. Each item will appear as a card with category filter.</p>
-                  
-                  {(data.portfolio || []).map((item, i) => (
-                    <div key={item.id} className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-                      <div className="flex justify-between items-center mb-3">
-                        <button onClick={() => toggleSection(`portfolio-${i}`)} className="flex items-center gap-2 text-white font-medium">
-                          {expandedSections[`portfolio-${i}`] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          {item.title || 'New Project'}
-                        </button>
-                        <button onClick={() => {
-                          const newPortfolio = (data.portfolio || []).filter((_, idx) => idx !== i);
-                          setData({ ...data, portfolio: newPortfolio });
-                        }} className="text-red-400 hover:text-red-300"><Trash2 size={16} /></button>
-                      </div>
-                      {expandedSections[`portfolio-${i}`] && (
-                        <div className="space-y-3 pt-2">
-                          <div className="flex gap-4">
-                            <div className="w-28 h-28 rounded-lg overflow-hidden border border-slate-700 flex-shrink-0">
-                              <img src={item.image || 'https://via.placeholder.com/200'} alt={item.title} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="flex-1 space-y-2">
-                              <input value={item.title} onChange={(e) => {
-                                const newPortfolio = [...(data.portfolio || [])];
-                                newPortfolio[i] = { ...newPortfolio[i], title: e.target.value };
-                                setData({ ...data, portfolio: newPortfolio });
-                              }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Project Title" />
-                              <input value={item.category} onChange={(e) => {
-                                const newPortfolio = [...(data.portfolio || [])];
-                                newPortfolio[i] = { ...newPortfolio[i], category: e.target.value };
-                                setData({ ...data, portfolio: newPortfolio });
-                              }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Category (e.g., UI/UX Design, Web Development)" />
-                            </div>
-                          </div>
-                          <textarea value={item.description} onChange={(e) => {
-                            const newPortfolio = [...(data.portfolio || [])];
-                            newPortfolio[i] = { ...newPortfolio[i], description: e.target.value };
-                            setData({ ...data, portfolio: newPortfolio });
-                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm min-h-[80px]" placeholder="Project Description" />
-                          <input value={item.image} onChange={(e) => {
-                            const newPortfolio = [...(data.portfolio || [])];
-                            newPortfolio[i] = { ...newPortfolio[i], image: e.target.value };
-                            setData({ ...data, portfolio: newPortfolio });
-                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Image URL" />
-                          <input value={item.link} onChange={(e) => {
-                            const newPortfolio = [...(data.portfolio || [])];
-                            newPortfolio[i] = { ...newPortfolio[i], link: e.target.value };
-                            setData({ ...data, portfolio: newPortfolio });
-                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Project Link (URL)" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <button onClick={() => {
-                    const newItem: PortfolioItem = {
-                      id: generateId(), title: '', description: '', image: '', category: '', link: ''
-                    };
-                    setData({ ...data, portfolio: [...(data.portfolio || []), newItem] });
-                  }} className="w-full py-3 border-2 border-dashed border-slate-700 rounded-xl text-emerald-400 hover:text-emerald-300 flex items-center justify-center gap-2">
-                    <Plus size={18} /> Add New Project
-                  </button>
-                </div>
-              )}
-
-              {/* TEMPLATES */}
-              {activeTab === 'templates' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-white mb-4">Templates for Sale ({data.templates.length})</h3>
-                  {data.templates.map((template, i) => (
-                    <div key={template.id} className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-                      <div className="flex justify-between items-center mb-3">
-                        <button onClick={() => toggleSection(`template-${i}`)} className="flex items-center gap-2 text-white font-medium">
-                          {expandedSections[`template-${i}`] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          {template.name} - ${template.price}
-                        </button>
-                        <button onClick={() => {
-                          const newTemplates = data.templates.filter((_, idx) => idx !== i);
-                          setData({ ...data, templates: newTemplates });
-                        }} className="text-red-400 hover:text-red-300"><Trash2 size={16} /></button>
-                      </div>
-                      {expandedSections[`template-${i}`] && (
-                        <div className="space-y-3 pt-2">
-                          <div className="flex gap-4">
-                            <img src={template.image} alt={template.name} className="w-24 h-24 object-cover rounded-lg" />
-                            <div className="flex-1 space-y-2">
-                              <input value={template.name} onChange={(e) => {
-                                const newTemplates = [...data.templates];
-                                newTemplates[i] = { ...newTemplates[i], name: e.target.value };
-                                setData({ ...data, templates: newTemplates });
-                              }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Name" />
-                              <div className="flex gap-2">
-                                <input type="number" value={template.price} onChange={(e) => {
-                                  const newTemplates = [...data.templates];
-                                  newTemplates[i] = { ...newTemplates[i], price: Number(e.target.value) };
-                                  setData({ ...data, templates: newTemplates });
-                                }} className="w-24 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Price" />
-                                <input value={template.category} onChange={(e) => {
-                                  const newTemplates = [...data.templates];
-                                  newTemplates[i] = { ...newTemplates[i], category: e.target.value };
-                                  setData({ ...data, templates: newTemplates });
-                                }} className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Category" />
-                              </div>
-                            </div>
-                          </div>
-                          <textarea value={template.description} onChange={(e) => {
-                            const newTemplates = [...data.templates];
-                            newTemplates[i] = { ...newTemplates[i], description: e.target.value };
-                            setData({ ...data, templates: newTemplates });
-                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm min-h-[60px]" placeholder="Description" />
-                          <input value={template.image} onChange={(e) => {
-                            const newTemplates = [...data.templates];
-                            newTemplates[i] = { ...newTemplates[i], image: e.target.value };
-                            setData({ ...data, templates: newTemplates });
-                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Image URL" />
-                          <input value={template.previewUrl} onChange={(e) => {
-                            const newTemplates = [...data.templates];
-                            newTemplates[i] = { ...newTemplates[i], previewUrl: e.target.value };
-                            setData({ ...data, templates: newTemplates });
-                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Preview URL" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <button onClick={() => {
-                    const newTemplate: Template = {
-                      id: generateId(), name: 'New Template', description: 'Description', image: 'https://via.placeholder.com/400x300',
-                      category: 'Business', price: 49, previewUrl: '#', features: []
-                    };
-                    setData({ ...data, templates: [...data.templates, newTemplate] });
-                  }} className="w-full py-3 border-2 border-dashed border-slate-700 rounded-xl text-blue-400 hover:text-blue-300 flex items-center justify-center gap-2">
-                    <Plus size={18} /> Add New Template
-                  </button>
-                </div>
-              )}
-
-              {/* SKILLS */}
-              {activeTab === 'skills' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-white mb-4">Skills Categories</h3>
-                  {data.settings.skills.map((category, i) => (
-                    <div key={i} className="bg-slate-800 p-4 rounded-lg space-y-2">
-                      <div className="flex justify-between items-center">
-                        <button onClick={() => toggleSection(`skill-${i}`)} className="flex items-center gap-2 text-white font-medium">
-                          {expandedSections[`skill-${i}`] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                          {category.title || 'Category'}
-                        </button>
-                        <button onClick={() => {
-                          const newSkills = data.settings.skills.filter((_, idx) => idx !== i);
-                          updateSettings({ skills: newSkills });
-                        }} className="text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
-                      </div>
-                      {expandedSections[`skill-${i}`] && (
-                        <div className="space-y-2 pt-2">
-                          <input value={category.title} onChange={(e) => {
-                            const newSkills = [...data.settings.skills];
-                            newSkills[i] = { ...newSkills[i], title: e.target.value };
-                            updateSettings({ skills: newSkills });
-                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Category Title" />
-                          <input value={category.items.join(', ')} onChange={(e) => {
-                            const newSkills = [...data.settings.skills];
-                            newSkills[i] = { ...newSkills[i], items: e.target.value.split(',').map(s => s.trim()).filter(Boolean) };
-                            updateSettings({ skills: newSkills });
-                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Skills (comma separated)" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <button onClick={() => updateSettings({ skills: [...data.settings.skills, { title: '', items: [] }] })} className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1">
-                    <Plus size={14} /> Add Category
-                  </button>
-                </div>
-              )}
-
-              {/* SETTINGS */}
-              {activeTab === 'settings' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-white mb-4">Contact & Settings</h3>
-                  <InputField label="Email" value={data.settings.email} onChange={(v) => updateSettings({ email: v })} />
-                  <InputField label="Location" value={data.settings.location} onChange={(v) => updateSettings({ location: v })} />
-                  
-                  <h4 className="text-md font-bold text-white mt-6 pt-4 border-t border-slate-700">Payment Settings</h4>
-                  <InputField label="USDT Wallet (TRC20)" value={data.settings.walletAddress} onChange={(v) => updateSettings({ walletAddress: v })} />
-                  
-                  <h4 className="text-md font-bold text-white mt-6 pt-4 border-t border-slate-700">Security</h4>
-                  <InputField label="Admin Password" value={data.settings.adminPassword} onChange={(v) => updateSettings({ adminPassword: v })} type="password" />
-                  
-                  <div className="mt-6 pt-4 border-t border-slate-700">
-                    <button onClick={handleReset} className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg flex items-center gap-2">
-                      <RotateCcw size={16} /> Reset All Data to Default
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* ANALYTICS */}
-              {activeTab === 'analytics' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-3 gap-4">
-                    <StatCard icon={<Users className="text-blue-400" />} label="Today" value={visitorStats.today} />
-                    <StatCard icon={<Users className="text-emerald-400" />} label="This Week" value={visitorStats.week} />
-                    <StatCard icon={<Users className="text-purple-400" />} label="This Month" value={visitorStats.month} />
-                  </div>
-
-                  <div className="bg-slate-800 rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-white mb-4">Recent Visitors ({visitorStats.total})</h3>
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {visitorStats.recentVisitors.map((v) => (
-                        <div key={v.id} className="flex items-center justify-between text-sm py-2 border-b border-slate-700">
-                          <span className="text-slate-400">{new Date(v.timestamp).toLocaleString()}</span>
-                          <span className="text-white">{v.page}</span>
-                          <span className={`px-2 py-0.5 rounded text-xs ${v.device === 'Mobile' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                            {v.device}
-                          </span>
-                        </div>
-                      ))}
-                      {visitorStats.recentVisitors.length === 0 && <p className="text-slate-500 text-sm">No visitors yet</p>}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="sticky bottom-0 bg-slate-900 border-t border-slate-800 p-4 flex items-center gap-3">
-              <button onClick={handleSave} className={`flex-1 py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-all ${saved ? 'bg-emerald-600' : 'bg-blue-600 hover:bg-blue-700'} text-white`}>
-                <Save size={18} />
-                {saved ? '✓ Saved!' : 'Save Changes'}
-              </button>
-              <button onClick={handleLogout} className="p-3 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg">
-                <LogOut size={18} />
-              </button>
-            </div>
-          </>
-        )}
+        <div className="p-6">
+          {activeTab === "dashboard" && (
+            <DashboardTab
+              visitorStats={visitorStats}
+              orderStats={orderStats}
+              onRefresh={loadDashboardData}
+            />
+          )}
+          {activeTab === "orders" && (
+            <OrdersTab
+              orders={ordersData}
+              onUpdateStatus={updateOrderStatus}
+              onRefresh={loadOrders}
+            />
+          )}
+          {activeTab === "settings" && (
+            <SettingsTab
+              data={settingsData}
+              updateSettings={updateSettings}
+              onSave={saveSettings}
+              saving={saving}
+              expandedSections={expandedSections}
+              toggleSection={toggleSection}
+            />
+          )}
+          {activeTab === "templates" && (
+            <TemplatesTab password={storedPassword} onRefresh={refreshData} />
+          )}
+          {activeTab === "portfolio" && (
+            <PortfolioTab password={storedPassword} onRefresh={refreshData} />
+          )}
+        </div>
       </div>
     </div>
   );
-};
+}
 
-const StatCard = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) => (
-  <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-    <div className="flex items-center gap-2 mb-2">{icon}<span className="text-slate-400 text-sm">{label}</span></div>
-    <div className="text-2xl font-bold text-white">{value}</div>
-  </div>
-);
+// Dashboard Tab
+function DashboardTab({
+  visitorStats,
+  orderStats,
+  onRefresh,
+}: {
+  visitorStats: VisitorStats | null;
+  orderStats: OrderStats | null;
+  onRefresh: () => void;
+}) {
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-bold">Overview</h3>
+        <button onClick={onRefresh} className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+          <RefreshCw size={18} />
+        </button>
+      </div>
 
-const InputField = ({ label, value, onChange, type = 'text', placeholder = '' }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) => (
-  <div>
-    <label className="block text-sm font-medium text-slate-300 mb-1.5">{label}</label>
-    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500" />
-  </div>
-);
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatCard label="Total Visitors" value={visitorStats?.total ?? 0} color="blue" />
+        <StatCard label="Today" value={visitorStats?.today ?? 0} color="emerald" />
+        <StatCard label="This Week" value={visitorStats?.week ?? 0} color="purple" />
+        <StatCard label="This Month" value={visitorStats?.month ?? 0} color="amber" />
+      </div>
 
-const TextAreaField = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
-  <div>
-    <label className="block text-sm font-medium text-slate-300 mb-1.5">{label}</label>
-    <textarea value={value} onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500 min-h-[100px]" />
-  </div>
-);
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Total Orders" value={orderStats?.total ?? 0} color="blue" />
+        <StatCard label="Pending" value={orderStats?.pending ?? 0} color="amber" />
+        <StatCard label="Completed" value={orderStats?.completed ?? 0} color="emerald" />
+        <StatCard label="Revenue" value={`$${orderStats?.revenue ?? 0}`} color="purple" />
+      </div>
+    </div>
+  );
+}
 
-export default AdminPanel;
+function StatCard({ label, value, color }: { label: string; value: number | string; color: string }) {
+  const colors: Record<string, string> = {
+    blue: "text-blue-400 bg-blue-600/10",
+    emerald: "text-emerald-400 bg-emerald-600/10",
+    purple: "text-purple-400 bg-purple-600/10",
+    amber: "text-amber-400 bg-amber-600/10",
+  };
+  return (
+    <div className={`p-4 rounded-xl border border-slate-800 ${colors[color] || colors.blue}`}>
+      <div className="text-2xl font-bold">{value}</div>
+      <div className="text-xs text-slate-400 mt-1">{label}</div>
+    </div>
+  );
+}
+
+// Orders Tab
+function OrdersTab({
+  orders,
+  onUpdateStatus,
+  onRefresh,
+}: {
+  orders: OrderRow[];
+  onUpdateStatus: (id: number, status: string) => void;
+  onRefresh: () => void;
+}) {
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-bold">Orders ({orders.length})</h3>
+        <button onClick={onRefresh} className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+          <RefreshCw size={18} />
+        </button>
+      </div>
+
+      {orders.length === 0 ? (
+        <p className="text-slate-400 text-center py-12">No orders yet</p>
+      ) : (
+        <div className="space-y-3">
+          {orders.map((order) => (
+            <div key={order.id} className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h4 className="font-bold">{order.templateName}</h4>
+                  <p className="text-sm text-slate-400">{order.email}</p>
+                  <p className="text-xs text-slate-500 mt-1">TX: {order.txHash}</p>
+                  <p className="text-xs text-slate-500">
+                    {order.createdAt ? new Date(order.createdAt).toLocaleString() : "N/A"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-emerald-400 font-bold">${order.amount}</span>
+                  <div className="mt-2">
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${
+                        order.status === "completed"
+                          ? "bg-emerald-900/50 text-emerald-400"
+                          : order.status === "rejected"
+                          ? "bg-red-900/50 text-red-400"
+                          : "bg-amber-900/50 text-amber-400"
+                      }`}
+                    >
+                      {order.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {order.status === "pending" && (
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => onUpdateStatus(order.id, "completed")}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg flex items-center gap-1"
+                  >
+                    <Check size={14} /> Approve
+                  </button>
+                  <button
+                    onClick={() => onUpdateStatus(order.id, "rejected")}
+                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg flex items-center gap-1"
+                  >
+                    <X size={14} /> Reject
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Settings Tab
+function SettingsTab({
+  data,
+  updateSettings,
+  onSave,
+  saving,
+  expandedSections,
+  toggleSection,
+}: {
+  data: SiteSettingsData;
+  updateSettings: (partial: Partial<SiteSettingsData>) => void;
+  onSave: () => void;
+  saving: boolean;
+  expandedSections: Record<string, boolean>;
+  toggleSection: (key: string) => void;
+}) {
+  const sections = [
+    {
+      key: "hero",
+      title: "🦸 Hero Section",
+      content: (
+        <div className="space-y-3">
+          <Field label="Greeting" value={data.heroGreeting} onChange={(v) => updateSettings({ heroGreeting: v })} />
+          <Field label="Name" value={data.heroName} onChange={(v) => updateSettings({ heroName: v })} />
+          <Field label="Title" value={data.heroTitle} onChange={(v) => updateSettings({ heroTitle: v })} />
+          <Field label="Description" value={data.heroDescription} onChange={(v) => updateSettings({ heroDescription: v })} textarea />
+          <Field label="Profile Image URL" value={data.profileImage} onChange={(v) => updateSettings({ profileImage: v })} />
+          <Field label="Background Image URL" value={data.heroBackground} onChange={(v) => updateSettings({ heroBackground: v })} />
+        </div>
+      ),
+    },
+    {
+      key: "social",
+      title: "🔗 Social Links",
+      content: (
+        <div className="space-y-3">
+          <Field label="GitHub URL" value={data.githubUrl} onChange={(v) => updateSettings({ githubUrl: v })} />
+          <Field label="Telegram URL" value={data.telegramUrl} onChange={(v) => updateSettings({ telegramUrl: v })} />
+          <Field label="Instagram URL" value={data.instagramUrl} onChange={(v) => updateSettings({ instagramUrl: v })} />
+          <Field label="LinkedIn URL" value={data.linkedinUrl} onChange={(v) => updateSettings({ linkedinUrl: v })} />
+        </div>
+      ),
+    },
+    {
+      key: "contact",
+      title: "📧 Contact Info",
+      content: (
+        <div className="space-y-3">
+          <Field label="Email" value={data.email} onChange={(v) => updateSettings({ email: v })} />
+          <Field label="Phone" value={data.phone} onChange={(v) => updateSettings({ phone: v })} />
+          <Field label="Location" value={data.location} onChange={(v) => updateSettings({ location: v })} />
+        </div>
+      ),
+    },
+    {
+      key: "about",
+      title: "ℹ️ About Section",
+      content: (
+        <div className="space-y-3">
+          <Field label="About Title" value={data.aboutTitle} onChange={(v) => updateSettings({ aboutTitle: v })} />
+          <Field label="Paragraph 1" value={data.aboutParagraph1} onChange={(v) => updateSettings({ aboutParagraph1: v })} textarea />
+          <Field label="Paragraph 2" value={data.aboutParagraph2} onChange={(v) => updateSettings({ aboutParagraph2: v })} textarea />
+          <Field label="Years Experience" value={data.yearsExperience} onChange={(v) => updateSettings({ yearsExperience: v })} />
+          <Field label="Templates Sold" value={data.templatesSold} onChange={(v) => updateSettings({ templatesSold: v })} />
+          <Field label="Happy Clients" value={data.happyClients} onChange={(v) => updateSettings({ happyClients: v })} />
+        </div>
+      ),
+    },
+    {
+      key: "payment",
+      title: "💰 Payment",
+      content: (
+        <div className="space-y-3">
+          <Field label="USDT Wallet Address" value={data.walletAddress} onChange={(v) => updateSettings({ walletAddress: v })} />
+        </div>
+      ),
+    },
+    {
+      key: "security",
+      title: "🔒 Security",
+      content: (
+        <div className="space-y-3">
+          <Field label="Admin Password" value={data.adminPassword} onChange={(v) => updateSettings({ adminPassword: v })} />
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h3 className="text-lg font-bold">Site Settings</h3>
+          <p className="text-xs text-emerald-400 mt-1">
+            ✅ Changes are saved to the database and visible to everyone
+          </p>
+        </div>
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 text-white rounded-lg flex items-center gap-2 text-sm font-medium"
+        >
+          <Save size={16} /> {saving ? "Saving..." : "Save All"}
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {sections.map((section) => (
+          <div key={section.key} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <button
+              onClick={() => toggleSection(section.key)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-700/50 transition-colors"
+            >
+              <span className="font-medium">{section.title}</span>
+              {expandedSections[section.key] ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+            </button>
+            {expandedSections[section.key] && (
+              <div className="px-4 pb-4">{section.content}</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  textarea,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  textarea?: boolean;
+}) {
+  return (
+    <div>
+      <label className="text-xs text-slate-400 mb-1 block">{label}</label>
+      {textarea ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={3}
+          className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none resize-none"
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+        />
+      )}
+    </div>
+  );
+}
+
+// Templates Tab
+function TemplatesTab({ password, onRefresh }: { password: string; onRefresh: () => Promise<void> }) {
+  const { templates } = useSiteData();
+  const [editing, setEditing] = useState<number | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: "", description: "", image: "", category: "", price: 0, previewUrl: "#", features: "" });
+
+  const handleAdd = async () => {
+    await fetch("/api/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        password,
+        ...form,
+        features: form.features.split(",").map((f) => f.trim()).filter(Boolean),
+      }),
+    });
+    setAdding(false);
+    setForm({ name: "", description: "", image: "", category: "", price: 0, previewUrl: "#", features: "" });
+    await onRefresh();
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this template?")) return;
+    await fetch("/api/templates", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password, id }),
+    });
+    await onRefresh();
+  };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-bold">Templates ({templates.length})</h3>
+        <button
+          onClick={() => setAdding(!adding)}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 text-sm"
+        >
+          <Plus size={16} /> Add Template
+        </button>
+      </div>
+
+      {adding && (
+        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700 mb-6 space-y-3">
+          <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" />
+          <input placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" />
+          <input placeholder="Image URL" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" />
+          <input placeholder="Price" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" />
+          <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" rows={2} />
+          <input placeholder="Features (comma separated)" value={form.features} onChange={(e) => setForm({ ...form, features: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" />
+          <div className="flex gap-2">
+            <button onClick={handleAdd} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm">Save</button>
+            <button onClick={() => setAdding(false)} className="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {templates.map((t) => (
+          <div key={t.id} className="bg-slate-800 rounded-xl p-4 border border-slate-700 flex items-center gap-4">
+            <img src={t.image} alt={t.name} className="w-16 h-16 rounded-lg object-cover" />
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold truncate">{t.name}</h4>
+              <p className="text-sm text-slate-400">{t.category} · ${t.price}</p>
+            </div>
+            <button
+              onClick={() => handleDelete(t.id)}
+              className="p-2 text-red-400 hover:bg-red-900/30 rounded-lg"
+            >
+              <Trash2 size={18} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Portfolio Tab
+function PortfolioTab({ password, onRefresh }: { password: string; onRefresh: () => Promise<void> }) {
+  const { portfolio } = useSiteData();
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ title: "", description: "", image: "", category: "", link: "#" });
+
+  const handleAdd = async () => {
+    await fetch("/api/portfolio", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password, ...form }),
+    });
+    setAdding(false);
+    setForm({ title: "", description: "", image: "", category: "", link: "#" });
+    await onRefresh();
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this item?")) return;
+    await fetch("/api/portfolio", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password, id }),
+    });
+    await onRefresh();
+  };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-bold">Portfolio ({portfolio.length})</h3>
+        <button
+          onClick={() => setAdding(!adding)}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 text-sm"
+        >
+          <Plus size={16} /> Add Item
+        </button>
+      </div>
+
+      {adding && (
+        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700 mb-6 space-y-3">
+          <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" />
+          <input placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" />
+          <input placeholder="Image URL" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" />
+          <input placeholder="Link" value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" />
+          <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" rows={2} />
+          <div className="flex gap-2">
+            <button onClick={handleAdd} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm">Save</button>
+            <button onClick={() => setAdding(false)} className="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {portfolio.map((p) => (
+          <div key={p.id} className="bg-slate-800 rounded-xl p-4 border border-slate-700 flex items-center gap-4">
+            <img src={p.image} alt={p.title} className="w-16 h-16 rounded-lg object-cover" />
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold truncate">{p.title}</h4>
+              <p className="text-sm text-slate-400">{p.category}</p>
+            </div>
+            <button
+              onClick={() => handleDelete(p.id)}
+              className="p-2 text-red-400 hover:bg-red-900/30 rounded-lg"
+            >
+              <Trash2 size={18} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+

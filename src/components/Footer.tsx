@@ -1,24 +1,26 @@
-import { Heart } from 'lucide-react';
-import { useLanguage } from '../context/LanguageContext';
+"use client";
 
-const Footer = () => {
+import { Heart } from "lucide-react";
+import { useLanguage } from "./ClientApp";
+
+export default function Footer() {
   const { t } = useLanguage();
 
   return (
-    <footer className="py-12 bg-slate-950 border-t border-slate-900 text-slate-400">
-      <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
-            ABDULRHMAN
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            {t('footer.made')} <Heart size={14} className="text-red-500 fill-red-500" /> {t('footer.by')} &copy; {new Date().getFullYear()}
-          </div>
-          <div className="text-sm">{t('footer.rights')}</div>
+    <footer className="py-8 bg-slate-900 text-white border-t border-slate-800">
+      <div className="container mx-auto px-4 text-center">
+        <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent mb-4">
+          ABDULRHMAN
         </div>
+        <p className="text-slate-400 text-sm flex items-center justify-center gap-1">
+          {t("footer.made")}{" "}
+          <Heart size={14} className="text-red-500 fill-red-500" />{" "}
+          {t("footer.by")}
+        </p>
+        <p className="text-slate-500 text-xs mt-2">
+          &copy; {new Date().getFullYear()} {t("footer.rights")}
+        </p>
       </div>
     </footer>
   );
-};
-
-export default Footer;
+}

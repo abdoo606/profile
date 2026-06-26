@@ -1,31 +1,36 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ExternalLink } from 'lucide-react';
-import { useLanguage } from '../context/LanguageContext';
-import { getSiteData } from '../data/store';
+"use client";
 
-const Portfolio = () => {
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { ExternalLink } from "lucide-react";
+import { useLanguage, useSiteData } from "./ClientApp";
+
+export default function Portfolio() {
   const { dir } = useLanguage();
-  const [activeCategory, setActiveCategory] = useState('All');
-  
-  const portfolio = getSiteData().portfolio || [];
-  
+  const { portfolio } = useSiteData();
+  const [activeCategory, setActiveCategory] = useState("All");
+
   if (portfolio.length === 0) return null;
-  
-  const categories = ['All', ...Array.from(new Set(portfolio.map(p => p.category)))];
-  const filtered = activeCategory === 'All' ? portfolio : portfolio.filter(p => p.category === activeCategory);
+
+  const categories = [
+    "All",
+    ...Array.from(new Set(portfolio.map((p) => p.category))),
+  ];
+  const filtered =
+    activeCategory === "All"
+      ? portfolio
+      : portfolio.filter((p) => p.category === activeCategory);
 
   return (
     <section id="portfolio" className="py-24 bg-slate-950 text-white">
       <div className="container mx-auto px-4">
-        <div className={`mb-12 text-center`}>
+        <div className="mb-12 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">My Work</h2>
           <p className="text-slate-400 max-w-2xl mx-auto">
             A showcase of my recent projects and work experience.
           </p>
         </div>
 
-        {/* Category Filter */}
         <div className="flex flex-wrap justify-center gap-3 mb-10">
           {categories.map((cat) => (
             <button
@@ -33,8 +38,8 @@ const Portfolio = () => {
               onClick={() => setActiveCategory(cat)}
               className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
                 activeCategory === cat
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
+                  ? "bg-emerald-600 text-white"
+                  : "bg-slate-800 text-slate-400 hover:text-white border border-slate-700"
               }`}
             >
               {cat}
@@ -62,7 +67,7 @@ const Portfolio = () => {
                   <div className="absolute top-3 left-3 px-3 py-1 bg-emerald-600/90 text-white text-xs font-medium rounded-full backdrop-blur-sm">
                     {item.category}
                   </div>
-                  {item.link && item.link !== '#' && (
+                  {item.link && item.link !== "#" && (
                     <a
                       href={item.link}
                       target="_blank"
@@ -73,14 +78,14 @@ const Portfolio = () => {
                     </a>
                   )}
                 </div>
-                <div className={`p-6 ${dir === 'rtl' ? 'text-right' : ''}`}>
+                <div className={`p-6 ${dir === "rtl" ? "text-right" : ""}`}>
                   <h3 className="text-xl font-bold mb-2 group-hover:text-emerald-400 transition-colors">
                     {item.title}
                   </h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
                     {item.description}
                   </p>
-                  {item.link && item.link !== '#' && (
+                  {item.link && item.link !== "#" && (
                     <a
                       href={item.link}
                       target="_blank"
@@ -99,6 +104,4 @@ const Portfolio = () => {
       </div>
     </section>
   );
-};
-
-export default Portfolio;
+}
