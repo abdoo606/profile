@@ -1,37 +1,42 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ExternalLink, ShoppingCart } from 'lucide-react';
+import { Eye, ShoppingCart, Star } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { getSiteData, Template } from '../data/store';
-import PaymentModal from './PaymentModal';
+import TemplateModal from './TemplateModal';
 
 const Templates = () => {
   const { t, dir } = useLanguage();
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [visibleCount, setVisibleCount] = useState(8);
   
   const templates = getSiteData().templates;
   const categories = ['All', ...Array.from(new Set(templates.map(p => p.category)))];
   const filtered = activeCategory === 'All' ? templates : templates.filter(p => p.category === activeCategory);
+  const visibleTemplates = filtered.slice(0, visibleCount);
 
   return (
     <section id="templates" className="py-24 bg-slate-950 text-white">
       <div className="container mx-auto px-4">
-        <div className={`mb-12 text-center ${dir === 'rtl' ? 'text-right' : ''}`}>
+        <div className={`mb-12 text-center`}>
           <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('templates.title')}</h2>
           <p className="text-slate-400 max-w-2xl mx-auto">{t('templates.subtitle')}</p>
         </div>
 
         {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-3 mb-10">
+        <div className="flex flex-wrap justify-center gap-2 mb-10">
           {categories.map((cat) => (
             <button
               key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+              onClick={() => {
+                setActiveCategory(cat);
+                setVisibleCount(8);
+              }}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 activeCategory === cat
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
+                  : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700 hover:border-slate-600'
               }`}
             >
               {cat === 'All' ? t('templates.all') : cat}
@@ -39,57 +44,124 @@ const Templates = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filtered.map((template, index) => (
+        {/* Templates Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {visibleTemplates.map((template, index) => (
             <motion.div
               key={template.id}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.05 }}
-              className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 hover:border-blue-500/30 transition-all group"
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+              className="group cursor-pointer"
+              onClick={() => setSelectedTemplate(template)}
             >
-              <div className="relative overflow-hidden h-44">
-                <img
-                  src={template.image}
-                  alt={template.name}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
-                <div className="absolute top-3 right-3 px-3 py-1 bg-emerald-600 text-white text-sm font-bold rounded-full">
-                  ${template.price} USDT
+              <div className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
+                {/* Image */}
+                <div className="relative overflow-hidden h-44">
+                  <img
+                    src={template.image}
+                    alt={template.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-60" />
+                  
+                  {/* Overlay on Hover */}
+                  <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="flex gap-3">
+                      <span className="p-3 bg-white/20 backdrop-blur-sm rounded-full text-white">
+                        <Eye size={20} />
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Category Badge */}
+                  <div className="absolute top-3 left-3 px-2 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-xs font-medium rounded-full">
+                    {template.category}
+                  </div>
+                  
+                  {/* Price Badge */}
+                  <div className="absolute top-3 right-3 px-3 py-1 bg-emerald-600 text-white text-sm font-bold rounded-full">
+                    ${template.price}
+                  </div>
                 </div>
-              </div>
-              <div className={`p-5 ${dir === 'rtl' ? 'text-right' : ''}`}>
-                <div className="text-xs text-blue-400 font-medium mb-1">{template.category}</div>
-                <h3 className="text-lg font-bold mb-2">{template.name}</h3>
-                <p className="text-slate-400 text-sm mb-4 line-clamp-2">{template.description}</p>
-                <div className="flex gap-2">
+                
+                {/* Content */}
+                <div className={`p-4 ${dir === 'rtl' ? 'text-right' : ''}`}>
+                  <div className="flex items-center gap-1 mb-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} size={12} className="text-amber-400 fill-amber-400" />
+                    ))}
+                    <span className="text-xs text-slate-500 ml-1">(4.9)</span>
+                  </div>
+                  <h3 className="text-lg font-bold mb-1 group-hover:text-blue-400 transition-colors line-clamp-1">
+                    {template.name}
+                  </h3>
+                  <p className="text-slate-400 text-sm mb-3 line-clamp-2">
+                    {template.description}
+                  </p>
+                  
+                  {/* Features Preview */}
+                  <div className="flex flex-wrap gap-1 mb-4">
+                    {template.features.slice(0, 3).map((feature, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-slate-800 text-slate-400 text-xs rounded">
+                        {feature}
+                      </span>
+                    ))}
+                    {template.features.length > 3 && (
+                      <span className="px-2 py-0.5 bg-slate-800 text-blue-400 text-xs rounded">
+                        +{template.features.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Buy Button */}
                   <button
-                    onClick={() => setSelectedTemplate(template)}
-                    className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedTemplate(template);
+                    }}
+                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
                   >
                     <ShoppingCart size={16} />
-                    {t('templates.buy')}
+                    {t('templates.buy')} - ${template.price}
                   </button>
-                  {template.previewUrl && template.previewUrl !== '#' && (
-                    <a
-                      href={template.previewUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
-                    >
-                      <ExternalLink size={16} />
-                    </a>
-                  )}
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
+
+        {/* Load More Button */}
+        {visibleCount < filtered.length && (
+          <div className="text-center mt-10">
+            <button
+              onClick={() => setVisibleCount(prev => prev + 8)}
+              className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-full border border-slate-700 transition-colors"
+            >
+              Load More Templates ({filtered.length - visibleCount} remaining)
+            </button>
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Total Templates', value: templates.length + '+' },
+            { label: 'Happy Customers', value: '500+' },
+            { label: 'Categories', value: categories.length - 1 },
+            { label: 'Avg. Rating', value: '4.9 ⭐' },
+          ].map((stat, i) => (
+            <div key={i} className="text-center p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+              <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
+              <div className="text-sm text-slate-400">{stat.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
+      {/* Template Detail Modal */}
       {selectedTemplate && (
-        <PaymentModal
+        <TemplateModal
           template={selectedTemplate}
           onClose={() => setSelectedTemplate(null)}
         />
