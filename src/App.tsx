@@ -31,10 +31,11 @@ function AppContent() {
         <Contact />
       </main>
       <Footer />
-      <AdminPanel
-        isOpen={adminOpen}
-        onClose={() => setAdminOpen(false)}
-      />
+      {adminOpen && (
+        <AdminPanel
+          onClose={() => setAdminOpen(false)}
+        />
+      )}
     </div>
   );
 }
