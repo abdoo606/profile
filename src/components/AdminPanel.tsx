@@ -246,17 +246,35 @@ const AdminPanel = ({ isOpen, onClose }: AdminPanelProps) => {
                           src={data.settings.profileImage || '/images/profile.jpg'} 
                           alt="Profile" 
                           className="w-full h-full object-cover"
+                          style={{ objectPosition: data.settings.profileImagePosition || 'center' }}
                           onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200'; }}
                         />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 space-y-2">
                         <input
                           value={data.settings.profileImage}
                           onChange={(e) => updateSettings({ profileImage: e.target.value })}
                           className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
                           placeholder="https://example.com/your-photo.jpg"
                         />
-                        <p className="text-xs text-slate-500 mt-1">Enter image URL (recommended: square image, min 400x400px)</p>
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">Image Position (which part to show)</label>
+                          <select
+                            value={data.settings.profileImagePosition || 'center'}
+                            onChange={(e) => updateSettings({ profileImagePosition: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                          >
+                            <option value="center">Center (وسط)</option>
+                            <option value="top">Top (أعلى)</option>
+                            <option value="bottom">Bottom (أسفل)</option>
+                            <option value="left">Left (يسار)</option>
+                            <option value="right">Right (يمين)</option>
+                            <option value="top left">Top Left (أعلى يسار)</option>
+                            <option value="top right">Top Right (أعلى يمين)</option>
+                            <option value="bottom left">Bottom Left (أسفل يسار)</option>
+                            <option value="bottom right">Bottom Right (أسفل يمين)</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -270,6 +288,7 @@ const AdminPanel = ({ isOpen, onClose }: AdminPanelProps) => {
                           src={data.settings.heroBackground || 'https://via.placeholder.com/1920x1080'} 
                           alt="Background" 
                           className="w-full h-full object-cover opacity-60"
+                          style={{ objectPosition: data.settings.heroBackgroundPosition || 'center' }}
                           onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1920x1080?text=Background'; }}
                         />
                       </div>
@@ -279,6 +298,24 @@ const AdminPanel = ({ isOpen, onClose }: AdminPanelProps) => {
                         className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
                         placeholder="https://example.com/background.jpg"
                       />
+                      <div>
+                        <label className="block text-xs text-slate-400 mb-1">Background Position (which part to show)</label>
+                        <select
+                          value={data.settings.heroBackgroundPosition || 'center'}
+                          onChange={(e) => updateSettings({ heroBackgroundPosition: e.target.value })}
+                          className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                        >
+                          <option value="center">Center (وسط)</option>
+                          <option value="top">Top (أعلى)</option>
+                          <option value="bottom">Bottom (أسفل)</option>
+                          <option value="left">Left (يسار)</option>
+                          <option value="right">Right (يمين)</option>
+                          <option value="top left">Top Left (أعلى يسار)</option>
+                          <option value="top right">Top Right (أعلى يمين)</option>
+                          <option value="bottom left">Bottom Left (أسفل يسار)</option>
+                          <option value="bottom right">Bottom Right (أسفل يمين)</option>
+                        </select>
+                      </div>
                       <p className="text-xs text-slate-500">Enter background image URL (recommended: landscape, min 1920x1080px)</p>
                     </div>
                   </div>

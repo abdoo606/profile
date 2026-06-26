@@ -39,7 +39,9 @@ export interface SiteSettings {
   heroTitle: string;
   heroDescription: string;
   profileImage: string;
+  profileImagePosition: string;
   heroBackground: string;
+  heroBackgroundPosition: string;
   
   // Social Links
   githubUrl: string;
@@ -96,7 +98,9 @@ const defaultSettings: SiteSettings = {
   heroTitle: 'IT Engineer & UI/UX Designer',
   heroDescription: 'I design and develop premium website templates, UI kits, and digital solutions. Browse my collection and find the perfect template for your project.',
   profileImage: '/images/profile.jpg',
+  profileImagePosition: 'center',
   heroBackground: 'https://images.pexels.com/photos/8108683/pexels-photo-8108683.jpeg?auto=compress&cs=tinysrgb&w=1920',
+  heroBackgroundPosition: 'center',
   
   // Social Links
   githubUrl: 'https://github.com/abdoo606',

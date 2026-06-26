@@ -52,6 +52,7 @@ const Hero = () => {
             src={settings.heroBackground} 
             alt="Background" 
             className="w-full h-full object-cover opacity-20"
+            style={{ objectPosition: settings.heroBackgroundPosition || 'center' }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-slate-950/50 via-slate-950/80 to-slate-950"></div>
         </div>
@@ -132,6 +133,7 @@ const Hero = () => {
                   src={settings.profileImage || '/images/profile.jpg'}
                   alt={settings.heroName}
                   className="w-full h-full object-cover"
+                  style={{ objectPosition: settings.profileImagePosition || 'center' }}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x400?text=Profile';
                   }}
