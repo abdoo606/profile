@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, Save, LogOut, Plus, Trash2, Check, Clock, XCircle, Users, DollarSign, ShoppingBag, Eye, Monitor, Smartphone, Settings, FileText, Palette, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
+import { X, Save, LogOut, Plus, Trash2, Check, Clock, XCircle, Users, DollarSign, ShoppingBag, Eye, Monitor, Smartphone, Settings, FileText, Palette, ChevronDown, ChevronUp, RotateCcw, Briefcase } from 'lucide-react';
 import { getSiteData, saveSiteData, resetSiteData, loginAdmin, isAdminLoggedIn, logoutAdmin, generateId, updateOrderStatus, getVisitorStats, getOrderStats } from '../data/store';
-import type { SiteData, Template, SiteSettings } from '../data/store';
+import type { SiteData, Template, SiteSettings, PortfolioItem } from '../data/store';
 import { useLanguage } from '../context/LanguageContext';
 
 interface AdminPanelProps {
@@ -78,6 +78,7 @@ const AdminPanel = ({ isOpen, onClose }: AdminPanelProps) => {
     { id: 'orders', label: 'Orders', icon: <ShoppingBag size={16} /> },
     { id: 'hero', label: 'Hero', icon: <FileText size={16} /> },
     { id: 'about', label: 'About', icon: <FileText size={16} /> },
+    { id: 'portfolio', label: 'My Work', icon: <Briefcase size={16} /> },
     { id: 'templates', label: 'Templates', icon: <Palette size={16} /> },
     { id: 'skills', label: 'Skills', icon: <FileText size={16} /> },
     { id: 'settings', label: 'Settings', icon: <Settings size={16} /> },
@@ -235,88 +236,113 @@ const AdminPanel = ({ isOpen, onClose }: AdminPanelProps) => {
                   <InputField label="Title / Job" value={data.settings.heroTitle} onChange={(v) => updateSettings({ heroTitle: v })} />
                   <TextAreaField label="Description" value={data.settings.heroDescription} onChange={(v) => updateSettings({ heroDescription: v })} />
                   
-                  <h4 className="text-md font-bold text-white mt-6 pt-4 border-t border-slate-700">Images</h4>
+                  <h4 className="text-md font-bold text-white mt-6 pt-4 border-t border-slate-700">Profile Image</h4>
                   
-                  {/* Profile Image */}
-                  <div className="bg-slate-800 p-4 rounded-lg">
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Profile Image</label>
+                  {/* Profile Image with Position Control */}
+                  <div className="bg-slate-800 p-4 rounded-lg space-y-4">
                     <div className="flex gap-4 items-start">
-                      <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-slate-700 flex-shrink-0">
+                      <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-slate-700 flex-shrink-0 relative">
                         <img 
                           src={data.settings.profileImage || '/images/profile.jpg'} 
                           alt="Profile" 
                           className="w-full h-full object-cover"
-                          style={{ objectPosition: data.settings.profileImagePosition || 'center' }}
+                          style={{ objectPosition: `${data.settings.profileImageX ?? 50}% ${data.settings.profileImageY ?? 50}%` }}
                           onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200'; }}
                         />
                       </div>
-                      <div className="flex-1 space-y-2">
+                      <div className="flex-1 space-y-3">
                         <input
                           value={data.settings.profileImage}
                           onChange={(e) => updateSettings({ profileImage: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                          placeholder="https://example.com/your-photo.jpg"
+                          className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm"
+                          placeholder="Image URL"
                         />
-                        <div>
-                          <label className="block text-xs text-slate-400 mb-1">Image Position (which part to show)</label>
-                          <select
-                            value={data.settings.profileImagePosition || 'center'}
-                            onChange={(e) => updateSettings({ profileImagePosition: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                          >
-                            <option value="center">Center (وسط)</option>
-                            <option value="top">Top (أعلى)</option>
-                            <option value="bottom">Bottom (أسفل)</option>
-                            <option value="left">Left (يسار)</option>
-                            <option value="right">Right (يمين)</option>
-                            <option value="top left">Top Left (أعلى يسار)</option>
-                            <option value="top right">Top Right (أعلى يمين)</option>
-                            <option value="bottom left">Bottom Left (أسفل يسار)</option>
-                            <option value="bottom right">Bottom Right (أسفل يمين)</option>
-                          </select>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-slate-400 mb-1">Horizontal Position (X): {data.settings.profileImageX ?? 50}%</label>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={data.settings.profileImageX ?? 50}
+                              onChange={(e) => updateSettings({ profileImageX: Number(e.target.value) })}
+                              className="w-full accent-blue-500"
+                            />
+                            <div className="flex justify-between text-xs text-slate-500">
+                              <span>Left</span>
+                              <span>Right</span>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-slate-400 mb-1">Vertical Position (Y): {data.settings.profileImageY ?? 50}%</label>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={data.settings.profileImageY ?? 50}
+                              onChange={(e) => updateSettings({ profileImageY: Number(e.target.value) })}
+                              className="w-full accent-blue-500"
+                            />
+                            <div className="flex justify-between text-xs text-slate-500">
+                              <span>Top</span>
+                              <span>Bottom</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
+
+                  <h4 className="text-md font-bold text-white mt-6 pt-4 border-t border-slate-700">Background Image</h4>
                   
-                  {/* Background Image */}
-                  <div className="bg-slate-800 p-4 rounded-lg">
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Hero Background Image</label>
-                    <div className="space-y-3">
-                      <div className="w-full h-32 rounded-lg overflow-hidden border border-slate-700">
-                        <img 
-                          src={data.settings.heroBackground || 'https://via.placeholder.com/1920x1080'} 
-                          alt="Background" 
-                          className="w-full h-full object-cover opacity-60"
-                          style={{ objectPosition: data.settings.heroBackgroundPosition || 'center' }}
-                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1920x1080?text=Background'; }}
-                        />
-                      </div>
-                      <input
-                        value={data.settings.heroBackground}
-                        onChange={(e) => updateSettings({ heroBackground: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                        placeholder="https://example.com/background.jpg"
+                  {/* Background Image with Position Control */}
+                  <div className="bg-slate-800 p-4 rounded-lg space-y-4">
+                    <div className="w-full h-40 rounded-lg overflow-hidden border border-slate-700 relative">
+                      <img 
+                        src={data.settings.heroBackground || 'https://via.placeholder.com/1920x1080'} 
+                        alt="Background" 
+                        className="w-full h-full object-cover opacity-60"
+                        style={{ objectPosition: `${data.settings.heroBackgroundX ?? 50}% ${data.settings.heroBackgroundY ?? 50}%` }}
+                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1920x1080'; }}
                       />
+                    </div>
+                    <input
+                      value={data.settings.heroBackground}
+                      onChange={(e) => updateSettings({ heroBackground: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm"
+                      placeholder="Background Image URL"
+                    />
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">Background Position (which part to show)</label>
-                        <select
-                          value={data.settings.heroBackgroundPosition || 'center'}
-                          onChange={(e) => updateSettings({ heroBackgroundPosition: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                        >
-                          <option value="center">Center (وسط)</option>
-                          <option value="top">Top (أعلى)</option>
-                          <option value="bottom">Bottom (أسفل)</option>
-                          <option value="left">Left (يسار)</option>
-                          <option value="right">Right (يمين)</option>
-                          <option value="top left">Top Left (أعلى يسار)</option>
-                          <option value="top right">Top Right (أعلى يمين)</option>
-                          <option value="bottom left">Bottom Left (أسفل يسار)</option>
-                          <option value="bottom right">Bottom Right (أسفل يمين)</option>
-                        </select>
+                        <label className="block text-xs text-slate-400 mb-1">Horizontal (X): {data.settings.heroBackgroundX ?? 50}%</label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={data.settings.heroBackgroundX ?? 50}
+                          onChange={(e) => updateSettings({ heroBackgroundX: Number(e.target.value) })}
+                          className="w-full accent-blue-500"
+                        />
+                        <div className="flex justify-between text-xs text-slate-500">
+                          <span>Left</span>
+                          <span>Right</span>
+                        </div>
                       </div>
-                      <p className="text-xs text-slate-500">Enter background image URL (recommended: landscape, min 1920x1080px)</p>
+                      <div>
+                        <label className="block text-xs text-slate-400 mb-1">Vertical (Y): {data.settings.heroBackgroundY ?? 50}%</label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={data.settings.heroBackgroundY ?? 50}
+                          onChange={(e) => updateSettings({ heroBackgroundY: Number(e.target.value) })}
+                          className="w-full accent-blue-500"
+                        />
+                        <div className="flex justify-between text-xs text-slate-500">
+                          <span>Top</span>
+                          <span>Bottom</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
@@ -389,10 +415,77 @@ const AdminPanel = ({ isOpen, onClose }: AdminPanelProps) => {
                 </div>
               )}
 
+              {/* PORTFOLIO / MY WORK */}
+              {activeTab === 'portfolio' && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-white mb-4">My Work / Portfolio ({data.portfolio?.length || 0})</h3>
+                  <p className="text-slate-400 text-sm mb-4">Add your projects and work here. Each item will appear as a card with category filter.</p>
+                  
+                  {(data.portfolio || []).map((item, i) => (
+                    <div key={item.id} className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                      <div className="flex justify-between items-center mb-3">
+                        <button onClick={() => toggleSection(`portfolio-${i}`)} className="flex items-center gap-2 text-white font-medium">
+                          {expandedSections[`portfolio-${i}`] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          {item.title || 'New Project'}
+                        </button>
+                        <button onClick={() => {
+                          const newPortfolio = (data.portfolio || []).filter((_, idx) => idx !== i);
+                          setData({ ...data, portfolio: newPortfolio });
+                        }} className="text-red-400 hover:text-red-300"><Trash2 size={16} /></button>
+                      </div>
+                      {expandedSections[`portfolio-${i}`] && (
+                        <div className="space-y-3 pt-2">
+                          <div className="flex gap-4">
+                            <div className="w-28 h-28 rounded-lg overflow-hidden border border-slate-700 flex-shrink-0">
+                              <img src={item.image || 'https://via.placeholder.com/200'} alt={item.title} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex-1 space-y-2">
+                              <input value={item.title} onChange={(e) => {
+                                const newPortfolio = [...(data.portfolio || [])];
+                                newPortfolio[i] = { ...newPortfolio[i], title: e.target.value };
+                                setData({ ...data, portfolio: newPortfolio });
+                              }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Project Title" />
+                              <input value={item.category} onChange={(e) => {
+                                const newPortfolio = [...(data.portfolio || [])];
+                                newPortfolio[i] = { ...newPortfolio[i], category: e.target.value };
+                                setData({ ...data, portfolio: newPortfolio });
+                              }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Category (e.g., UI/UX Design, Web Development)" />
+                            </div>
+                          </div>
+                          <textarea value={item.description} onChange={(e) => {
+                            const newPortfolio = [...(data.portfolio || [])];
+                            newPortfolio[i] = { ...newPortfolio[i], description: e.target.value };
+                            setData({ ...data, portfolio: newPortfolio });
+                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm min-h-[80px]" placeholder="Project Description" />
+                          <input value={item.image} onChange={(e) => {
+                            const newPortfolio = [...(data.portfolio || [])];
+                            newPortfolio[i] = { ...newPortfolio[i], image: e.target.value };
+                            setData({ ...data, portfolio: newPortfolio });
+                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Image URL" />
+                          <input value={item.link} onChange={(e) => {
+                            const newPortfolio = [...(data.portfolio || [])];
+                            newPortfolio[i] = { ...newPortfolio[i], link: e.target.value };
+                            setData({ ...data, portfolio: newPortfolio });
+                          }} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm" placeholder="Project Link (URL)" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <button onClick={() => {
+                    const newItem: PortfolioItem = {
+                      id: generateId(), title: '', description: '', image: '', category: '', link: ''
+                    };
+                    setData({ ...data, portfolio: [...(data.portfolio || []), newItem] });
+                  }} className="w-full py-3 border-2 border-dashed border-slate-700 rounded-xl text-emerald-400 hover:text-emerald-300 flex items-center justify-center gap-2">
+                    <Plus size={18} /> Add New Project
+                  </button>
+                </div>
+              )}
+
               {/* TEMPLATES */}
               {activeTab === 'templates' && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-white mb-4">Templates ({data.templates.length})</h3>
+                  <h3 className="text-lg font-bold text-white mb-4">Templates for Sale ({data.templates.length})</h3>
                   {data.templates.map((template, i) => (
                     <div key={template.id} className="bg-slate-800 rounded-xl p-4 border border-slate-700">
                       <div className="flex justify-between items-center mb-3">

@@ -3,6 +3,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import About from './components/About';
+import Portfolio from './components/Portfolio';
 import Templates from './components/Templates';
 import Skills from './components/Skills';
 import Contact from './components/Contact';
@@ -24,6 +25,7 @@ function AppContent() {
       <main>
         <Hero />
         <About />
+        <Portfolio />
         <Templates />
         <Skills />
         <Contact />

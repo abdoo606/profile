@@ -39,9 +39,11 @@ export interface SiteSettings {
   heroTitle: string;
   heroDescription: string;
   profileImage: string;
-  profileImagePosition: string;
+  profileImageX: number;
+  profileImageY: number;
   heroBackground: string;
-  heroBackgroundPosition: string;
+  heroBackgroundX: number;
+  heroBackgroundY: number;
   
   // Social Links
   githubUrl: string;
@@ -82,9 +84,19 @@ export interface SiteSettings {
   adminPassword: string;
 }
 
+export interface PortfolioItem {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  category: string;
+  link: string;
+}
+
 export interface SiteData {
   settings: SiteSettings;
   templates: Template[];
+  portfolio: PortfolioItem[];
   orders: Order[];
   visitors: Visitor[];
 }
@@ -98,9 +110,11 @@ const defaultSettings: SiteSettings = {
   heroTitle: 'IT Engineer & UI/UX Designer',
   heroDescription: 'I design and develop premium website templates, UI kits, and digital solutions. Browse my collection and find the perfect template for your project.',
   profileImage: '/images/profile.jpg',
-  profileImagePosition: 'center',
+  profileImageX: 50,
+  profileImageY: 50,
   heroBackground: 'https://images.pexels.com/photos/8108683/pexels-photo-8108683.jpeg?auto=compress&cs=tinysrgb&w=1920',
-  heroBackgroundPosition: 'center',
+  heroBackgroundX: 50,
+  heroBackgroundY: 50,
   
   // Social Links
   githubUrl: 'https://github.com/abdoo606',
@@ -227,9 +241,45 @@ const defaultTemplates: Template[] = [
   },
 ];
 
+const defaultPortfolio: PortfolioItem[] = [
+  {
+    id: '1',
+    title: 'E-Commerce Website Redesign',
+    description: 'Complete redesign of an e-commerce platform with modern UI/UX principles, improving conversion rates by 40%.',
+    image: 'https://images.pexels.com/photos/230544/pexels-photo-230544.jpeg?auto=compress&cs=tinysrgb&w=800',
+    category: 'UI/UX Design',
+    link: '#',
+  },
+  {
+    id: '2',
+    title: 'Corporate IT Infrastructure',
+    description: 'Designed and implemented complete IT infrastructure for a 200+ employee company including network, security, and cloud solutions.',
+    image: 'https://images.pexels.com/photos/325229/pexels-photo-325229.jpeg?auto=compress&cs=tinysrgb&w=800',
+    category: 'IT Solutions',
+    link: '#',
+  },
+  {
+    id: '3',
+    title: 'Mobile Banking App UI',
+    description: 'Designed intuitive mobile banking application interface with focus on accessibility and user experience.',
+    image: 'https://images.pexels.com/photos/6289025/pexels-photo-6289025.jpeg?auto=compress&cs=tinysrgb&w=800',
+    category: 'UI/UX Design',
+    link: '#',
+  },
+  {
+    id: '4',
+    title: 'Restaurant Management System',
+    description: 'Full-stack web application for restaurant management including POS, inventory, and staff management.',
+    image: 'https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg?auto=compress&cs=tinysrgb&w=800',
+    category: 'Web Development',
+    link: '#',
+  },
+];
+
 const defaultData: SiteData = {
   settings: defaultSettings,
   templates: defaultTemplates,
+  portfolio: defaultPortfolio,
   orders: [],
   visitors: [],
 };

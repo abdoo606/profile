@@ -43,6 +43,9 @@ const Hero = () => {
     { url: `mailto:${settings.email}`, Icon: Mail, show: !!settings.email },
   ].filter(link => link.show);
 
+  const bgPosition = `${settings.heroBackgroundX ?? 50}% ${settings.heroBackgroundY ?? 50}%`;
+  const profilePosition = `${settings.profileImageX ?? 50}% ${settings.profileImageY ?? 50}%`;
+
   return (
     <section id="home" className="min-h-screen flex items-center justify-center pt-20 bg-slate-950 text-white overflow-hidden relative">
       {/* Background Image */}
@@ -52,7 +55,7 @@ const Hero = () => {
             src={settings.heroBackground} 
             alt="Background" 
             className="w-full h-full object-cover opacity-20"
-            style={{ objectPosition: settings.heroBackgroundPosition || 'center' }}
+            style={{ objectPosition: bgPosition }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-slate-950/50 via-slate-950/80 to-slate-950"></div>
         </div>
@@ -133,7 +136,7 @@ const Hero = () => {
                   src={settings.profileImage || '/images/profile.jpg'}
                   alt={settings.heroName}
                   className="w-full h-full object-cover"
-                  style={{ objectPosition: settings.profileImagePosition || 'center' }}
+                  style={{ objectPosition: profilePosition }}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x400?text=Profile';
                   }}

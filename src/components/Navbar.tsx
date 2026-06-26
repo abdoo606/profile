@@ -22,6 +22,7 @@ const Navbar = ({ onAdminClick }: NavbarProps) => {
   const navLinks = [
     { name: t('nav.home'), href: '#home' },
     { name: t('nav.about'), href: '#about' },
+    { name: 'My Work', href: '#portfolio' },
     { name: t('nav.templates'), href: '#templates' },
     { name: t('nav.skills'), href: '#skills' },
     { name: t('nav.contact'), href: '#contact' },
