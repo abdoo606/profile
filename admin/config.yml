@@ -1,0 +1,19 @@
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "images"
+public_folder: "/images"
+
+collections:
+  - name: "profile"
+    label: "الملف الشخصي"
+    files:
+      - label: "البيانات الشخصية"
+        name: "profile"
+        file: "_data/profile.json"
+        fields:
+          - { label: "الاسم", name: "name", widget: "string" }
+          - { label: "المسمى الوظيفي", name: "title", widget: "string" }
+          - { label: "نبذة عني", name: "bio", widget: "text" }
+          - { label: "GitHub", name: "github", widget: "string" }

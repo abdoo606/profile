@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة الإدارة</title>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f1a;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    .admin-header {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #333;
+    }
+
+    .admin-header h1 {
+      font-size: 1.5rem;
+      color: #00d4ff;
+    }
+
+    .logout-btn {
+      background: #ff4757;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: 0.3s;
+    }
+
+    .logout-btn:hover { background: #ff3742; }
+
+    .login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .login-container h2 {
+      color: #00d4ff;
+      font-size: 2rem;
+    }
+
+    .login-btn {
+      background: linear-gradient(135deg, #00d4ff, #0099bb);
+      color: white;
+      border: none;
+      padding: 15px 40px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: 0.3s;
+    }
+
+    .login-btn:hover { transform: translateY(-2px); }
+
+    .dashboard {
+      display: none;
+      padding: 40px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      transition: 0.3s;
+    }
+
+    .stat-card:hover {
+      border-color: #00d4ff;
+      transform: translateY(-3px);
+    }
+
+    .stat-card .icon {
+      font-size: 2.5rem;
+      margin-bottom: 15px;
+    }
+
+    .stat-card .number {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #00d4ff;
+    }
+
+    .stat-card .label {
+      color: #aaa;
+      margin-top: 5px;
+      font-size: 0.95rem;
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      color: #00d4ff;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #333;
+    }
+
+    .visits-chart {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      height: 150px;
+      margin-top: 20px;
+    }
+
+    .bar-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .bar {
+      width: 100%;
+      background: linear-gradient(to top, #00d4ff, #0099bb);
+      border-radius: 6px 6px 0 0;
+      transition: 0.3s;
+      min-height: 5px;
+    }
+
+    .bar-label {
+      color: #aaa;
+      font-size: 0.75rem;
+    }
+
+    .info-box {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border: 1px solid #00d4ff33;
+      border-radius: 16px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .info-box p {
+      color: #aaa;
+      line-height: 1.8;
+    }
+
+    .info-box strong { color: #00d4ff; }
+
+    .edit-link {
+      display: inline-block;
+      margin-top: 15px;
+      background: linear-gradient(135deg, #00d4ff, #0099bb);
+      color: white;
+      padding: 12px 25px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 0.95rem;
+      transition: 0.3s;
+    }
+
+    .edit-link:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+
+<!-- شاشة تسجيل الدخول -->
+<div class="login-container" id="loginContainer">
+  <div style="font-size: 3rem;">🔐</div>
+  <h2>لوحة الإدارة</h2>
+  <p style="color: #aaa;">سجل دخول للوصول إلى الإحصائيات</p>
+  <button class="login-btn" onclick="netlifyIdentity.open()">
+    تسجيل الدخول
+  </button>
+</div>
+
+<!-- لوحة التحكم -->
+<div id="adminDashboard" style="display:none;">
+  
+  <div class="admin-header">
+    <h1>📊 لوحة الإحصائيات</h1>
+    <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
+  </div>
+
+  <div class="dashboard" id="dashboard">
+    
+    <!-- الإحصائيات الرئيسية -->
+    <h2 class="section-title">📈 الإحصائيات العامة</h2>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="icon">👁️</div>
+        <div class="number" id="totalVisits">0</div>
+        <div class="label">إجمالي الزيارات</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="icon">📅</div>
+        <div class="number" id="todayVisits">0</div>
+        <div class="label">زيارات اليوم</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="icon">🔗</div>
+        <div class="number" id="githubClicks">0</div>
+        <div class="label">نقرات GitHub</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="icon">📱</div>
+        <div class="number" id="mobileVisits">0</div>
+        <div class="label">زيارات موبايل</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="icon">🖥️</div>
+        <div class="number" id="desktopVisits">0</div>
+        <div class="label">زيارات ديسكتوب</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="icon">⏱️</div>
+        <div class="number" id="avgTime">0s</div>
+        <div class="label">متوسط وقت الزيارة</div>
+      </div>
+    </div>
+
+    <!-- رسم بياني للزيارات -->
+    <div class="visits-chart">
+      <h2 class="section-title">📊 زيارات آخر 7 أيام</h2>
+      <div class="chart-bars" id="chartBars"></div>
+    </div>
+
+    <!-- معلومات الموقع -->
+    <h2 class="section-title">⚙️ إدارة الموقع</h2>
+    <div class="info-box">
+      <p>
+        <strong>لتعديل محتوى الموقع:</strong><br>
+        يمكنك التعديل مباشرة من الموقع الرئيسي، وسيتم حفظ التعديلات تلقائياً على GitHub وستظهر للجميع.
+      </p>
+      <a href="/" class="edit-link">🏠 الذهاب للموقع الرئيسي</a>
+      <a href="https://github.com/abdoo606/profile" class="edit-link" target="_blank">
+        📂 فتح GitHub
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ====== إحصائيات ======
+function loadStats() {
+  // إجمالي الزيارات
+  const visits = parseInt(localStorage.getItem('site_visits') || '0');
+  document.getElementById('totalVisits').textContent = visits.toLocaleString();
+  
+  // زيارات اليوم
+  const today = new Date().toDateString();
+  const todayData = JSON.parse(localStorage.getItem('daily_visits') || '{}');
+  document.getElementById('todayVisits').textContent = (todayData[today] || 0).toLocaleString();
+  
+  // نقرات GitHub
+  const github = parseInt(localStorage.getItem('github_clicks') || '0');
+  document.getElementById('githubClicks').textContent = github.toLocaleString();
+  
+  // موبايل/ديسكتوب
+  const mobile = parseInt(localStorage.getItem('mobile_visits') || '0');
+  const desktop = parseInt(localStorage.getItem('desktop_visits') || '0');
+  document.getElementById('mobileVisits').textContent = mobile.toLocaleString();
+  document.getElementById('desktopVisits').textContent = desktop.toLocaleString();
+  
+  // متوسط الوقت
+  const avgTime = parseInt(localStorage.getItem('avg_time') || '0');
+  document.getElementById('avgTime').textContent = avgTime + 's';
+  
+  // رسم بياني
+  buildChart(todayData);
+}
+
+function buildChart(todayData) {
+  const bars = document.getElementById('chartBars');
+  bars.innerHTML = '';
+  
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d);
+  }
+  
+  const values = days.map(d => todayData[d.toDateString()] || 0);
+  const maxVal = Math.max(...values, 1);
+  
+  days.forEach((d, i) => {
+    const heightPercent = (values[i] / maxVal) * 100;
+    const dayName = d.toLocaleDateString('ar', { weekday: 'short' });
+    
+    bars.innerHTML += `
+      <div class="bar-wrapper">
+        <div class="bar" style="height: ${heightPercent}%;" title="${values[i]} زيارة"></div>
+        <div class="bar-label">${dayName}</div>
+      </div>
+    `;
+  });
+}
+
+// ====== Authentication ======
+netlifyIdentity.on('init', user => {
+  if (user) showDashboard();
+});
+
+netlifyIdentity.on('login', user => {
+  netlifyIdentity.close();
+  showDashboard();
+});
+
+netlifyIdentity.on('logout', () => {
+  document.getElementById('adminDashboard').style.display = 'none';
+  document.getElementById('loginContainer').style.display = 'flex';
+});
+
+function showDashboard() {
+  document.getElementById('loginContainer').style.display = 'none';
+  document.getElementById('adminDashboard').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'block';
+  loadStats();
+}
+
+function logout() {
+  netlifyIdentity.logout();
+}
+</script>
+
+</body>
+</html>

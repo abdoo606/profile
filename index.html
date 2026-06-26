@@ -1,6 +1,45 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Netlify Identity -->
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+
+<!-- SEO Meta Tags -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Abdelrahman - Full Stack Developer | Web Developer Portfolio">
+<meta name="keywords" content="Abdelrahman, Developer, Full Stack, Web Development, Portfolio">
+<meta name="author" content="Abdelrahman">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph (للظهور في السوشيال ميديا) -->
+<meta property="og:title" content="Abdelrahman - Developer Portfolio">
+<meta property="og:description" content="Full Stack Developer Portfolio">
+<meta property="og:image" content="https://svprofile.netlify.app/your-image.jpg">
+<meta property="og:url" content="https://svprofile.netlify.app">
+<meta property="og:type" content="website">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Abdelrahman - Developer Portfolio">
+<meta name="twitter:description" content="Full Stack Developer Portfolio">
+
+<!-- Canonical URL -->
+<link rel="canonical" href="https://svprofile.netlify.app">
+
+<!-- Structured Data (JSON-LD) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Abdelrahman",
+  "url": "https://svprofile.netlify.app",
+  "jobTitle": "Full Stack Developer",
+  "sameAs": [
+    "https://github.com/abdoo606"
+  ]
+}
+</script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Abdulrhman | IT Engineer & Templates Store</title>
@@ -8,5 +47,17 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+  <!-- Netlify Identity Redirect -->
+<script>
+  if (window.netlifyIdentity) {
+    window.netlifyIdentity.on("init", user => {
+      if (!user) {
+        window.netlifyIdentity.on("login", () => {
+          document.location.href = "/admin/";
+        });
+      }
+    });
+  }
+</script>
   </body>
 </html>
