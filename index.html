@@ -59,9 +59,8 @@
     });
   }
 </script>
-<!-- ====== نظام حفظ التعديلات على GitHub ====== -->
+<!-- ====== نظام التعديل والحفظ على GitHub ====== -->
 <script>
-// ========== إعدادات GitHub ==========
 const GITHUB_CONFIG = {
   owner: 'abdoo606',
   repo: 'profile',
@@ -69,190 +68,156 @@ const GITHUB_CONFIG = {
   filePath: 'index.html'
 };
 
-// ========== التحقق من وضع التعديل ==========
 function isEditMode() {
   return localStorage.getItem('admin_token') !== null;
 }
 
-// ========== تسجيل دخول الأدمن ==========
 function adminLogin() {
-  const token = prompt('🔐 أدخل GitHub Token:');
+  const token = prompt('🔐 ألصق GitHub Token هنا:');
   if (token && token.startsWith('ghp_')) {
     localStorage.setItem('admin_token', token);
-    alert('✅ تم تسجيل الدخول بنجاح!\nيمكنك الآن التعديل وستحفظ التغييرات للجميع.');
+    alert('✅ تم تسجيل الدخول!');
     location.reload();
   } else if (token) {
-    alert('❌ Token غير صحيح!');
+    alert('❌ Token غير صحيح! يجب أن يبدأ بـ ghp_');
   }
 }
 
-// ========== تسجيل خروج الأدمن ==========
 function adminLogout() {
-  if (confirm('هل تريد تسجيل الخروج؟')) {
+  if (confirm('تسجيل الخروج؟')) {
     localStorage.removeItem('admin_token');
-    alert('✅ تم تسجيل الخروج');
     location.reload();
   }
 }
 
-// ========== حفظ التعديلات على GitHub ==========
 async function saveToGitHub() {
   const token = localStorage.getItem('admin_token');
-  if (!token) {
-    alert('❌ يجب تسجيل الدخول أولاً!');
-    return;
-  }
+  if (!token) { alert('❌ سجل دخول أولاً!'); return; }
 
-  // عرض رسالة "جاري الحفظ"
   const saveBtn = document.getElementById('saveBtn');
   const originalText = saveBtn.innerHTML;
   saveBtn.innerHTML = '⏳ جاري الحفظ...';
   saveBtn.disabled = true;
 
   try {
-    // 1. الحصول على محتوى الصفحة الحالي
+    // إخفاء شريط الأدمن قبل الحفظ
+    const adminBar = document.getElementById('adminBar');
+    const adminTrigger = document.getElementById('adminTrigger');
+    if (adminBar) adminBar.style.display = 'none';
+    if (adminTrigger) adminTrigger.style.display = 'none';
+    
     const newContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
-
-    // 2. الحصول على SHA الملف الحالي (مطلوب للتحديث)
-    const getFileUrl = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}?ref=${GITHUB_CONFIG.branch}`;
     
-    const fileResponse = await fetch(getFileUrl, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github.v3+json'
-      }
+    // إعادة إظهار شريط الأدمن
+    if (adminBar) adminBar.style.display = '';
+    if (adminTrigger) adminTrigger.style.display = '';
+
+    const getUrl = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}?ref=${GITHUB_CONFIG.branch}`;
+    const fileRes = await fetch(getUrl, {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
+    if (!fileRes.ok) throw new Error('فشل قراءة الملف');
+    const fileData = await fileRes.json();
 
-    if (!fileResponse.ok) throw new Error('فشل قراءة الملف');
-    
-    const fileData = await fileResponse.json();
-    const sha = fileData.sha;
-
-    // 3. تحويل المحتوى إلى Base64 (يدعم العربية)
     const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
 
-    // 4. رفع التعديل
-    const updateUrl = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
-    
-    const updateResponse = await fetch(updateUrl, {
+    const updateRes = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        message: `تحديث المحتوى - ${new Date().toLocaleString('ar')}`,
+        message: `تحديث - ${new Date().toLocaleString('ar')}`,
         content: encodedContent,
-        sha: sha,
+        sha: fileData.sha,
         branch: GITHUB_CONFIG.branch
       })
     });
 
-    if (!updateResponse.ok) {
-      const errorData = await updateResponse.json();
-      throw new Error(errorData.message || 'فشل الحفظ');
+    if (!updateRes.ok) {
+      const err = await updateRes.json();
+      throw new Error(err.message);
     }
 
-    // نجح الحفظ
-    saveBtn.innerHTML = '✅ تم الحفظ!';
+    saveBtn.innerHTML = '✅ تم!';
     setTimeout(() => {
       saveBtn.innerHTML = originalText;
       saveBtn.disabled = false;
     }, 2000);
-
-    alert('✅ تم حفظ التعديلات بنجاح!\n\n⏳ سيظهر التحديث للجميع خلال 1-2 دقيقة (Netlify يعيد بناء الموقع).');
+    alert('✅ تم الحفظ!\nسيظهر التحديث للجميع خلال 1-2 دقيقة.');
 
   } catch (error) {
-    console.error(error);
     saveBtn.innerHTML = originalText;
     saveBtn.disabled = false;
-    alert('❌ حدث خطأ:\n' + error.message);
+    alert('❌ خطأ: ' + error.message);
   }
 }
 
-// ========== إنشاء أزرار التحكم ==========
-function createAdminControls() {
-  // زر تسجيل الدخول السري (مخفي - تظهر بـ Ctrl+Shift+L)
-  document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.shiftKey && e.key === 'L') {
-      if (isEditMode()) {
-        adminLogout();
-      } else {
-        adminLogin();
-      }
+function createAdminUI() {
+  // زر شفاف مخفي في الزاوية اليمنى السفلية
+  const trigger = document.createElement('div');
+  trigger.id = 'adminTrigger';
+  trigger.onclick = () => {
+    if (isEditMode()) {
+      adminLogout();
+    } else {
+      adminLogin();
     }
-  });
+  };
+  trigger.style.cssText = `
+    position: fixed;
+    bottom: 5px;
+    right: 5px;
+    width: 25px;
+    height: 25px;
+    background: transparent;
+    cursor: pointer;
+    z-index: 99999;
+  `;
+  document.body.appendChild(trigger);
 
-  // إظهار شريط الحفظ إذا كان في وضع التعديل
+  // شريط الحفظ يظهر فقط في وضع الأدمن
   if (isEditMode()) {
-    const adminBar = document.createElement('div');
-    adminBar.id = 'adminBar';
-    adminBar.innerHTML = `
-      <div style="
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: linear-gradient(135deg, #1a1a2e, #16213e);
-        border: 2px solid #00d4ff;
-        border-radius: 50px;
-        padding: 12px 25px;
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        z-index: 99999;
-        box-shadow: 0 10px 40px rgba(0, 212, 255, 0.3);
-        font-family: 'Segoe UI', sans-serif;
-      ">
-        <span style="color: #00d4ff; font-weight: bold; font-size: 14px;">
-          🔓 وضع التعديل
-        </span>
-        <button id="saveBtn" onclick="saveToGitHub()" style="
-          background: linear-gradient(135deg, #00d4ff, #0099bb);
-          color: white;
-          border: none;
-          padding: 8px 20px;
-          border-radius: 25px;
-          cursor: pointer;
-          font-weight: bold;
-          font-size: 13px;
-          transition: 0.3s;
-        ">💾 حفظ التعديلات</button>
-        <button onclick="adminLogout()" style="
-          background: #ff4757;
-          color: white;
-          border: none;
-          padding: 8px 15px;
-          border-radius: 25px;
-          cursor: pointer;
-          font-size: 13px;
-          transition: 0.3s;
-        ">🚪 خروج</button>
-      </div>
+    const bar = document.createElement('div');
+    bar.id = 'adminBar';
+    bar.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border: 2px solid #00d4ff;
+      border-radius: 50px;
+      padding: 12px 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      z-index: 99999;
+      box-shadow: 0 10px 40px rgba(0,212,255,0.4);
+      font-family: 'Segoe UI', sans-serif;
     `;
-    document.body.appendChild(adminBar);
+    bar.innerHTML = `
+      <span style="color:#00d4ff;font-weight:bold;font-size:13px;">🔓 وضع التعديل</span>
+      <button id="saveBtn" onclick="saveToGitHub()" style="
+        background:linear-gradient(135deg,#00d4ff,#0099bb);
+        color:white;border:none;padding:8px 18px;
+        border-radius:25px;cursor:pointer;font-weight:bold;font-size:13px;
+      ">💾 حفظ</button>
+      <button onclick="adminLogout()" style="
+        background:#ff4757;color:white;border:none;
+        padding:8px 14px;border-radius:25px;cursor:pointer;font-size:13px;
+      ">🚪 خروج</button>
+    `;
+    document.body.appendChild(bar);
   }
 }
 
-// تشغيل عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', createAdminControls);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', createAdminUI);
+} else {
+  createAdminUI();
+}
 </script>
-
-<!-- زر الأدمن المخفي -->
-<div id="adminTrigger" 
-     onclick="adminLogin()" 
-     style="
-       position: fixed;
-       bottom: 10px;
-       right: 10px;
-       width: 30px;
-       height: 30px;
-       background: transparent;
-       cursor: pointer;
-       z-index: 99999;
-     "
-     title="">
-</div>
   </body>
 </html>
