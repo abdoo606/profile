@@ -21,7 +21,9 @@ import {
 import { useSiteData, type TemplateRow, type PortfolioRow } from "./ClientApp";
 import type { SiteSettingsData } from "@/db/defaults";
 
+// ✅ تمت الإضافة: isOpen property
 interface AdminPanelProps {
+  isOpen: boolean;      // ← أضفنا هذا
   onClose: () => void;
 }
 
@@ -56,7 +58,12 @@ interface OrderStats {
   revenue: number;
 }
 
-export default function AdminPanel({ onClose }: AdminPanelProps) {
+// ✅ تم التعديل: destructuring isOpen مع onClose
+export default function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
+  
+  // ✅ تمت الإضافة: شرط الإخفاء عندما يكون مغلق
+  if (!isOpen) return null;
+
   const { settings: initialSettings, refreshData } = useSiteData();
   const [loggedIn, setLoggedIn] = useState(false);
   const [password, setPassword] = useState("");
@@ -735,4 +742,3 @@ function PortfolioTab({ password, onRefresh }: { password: string; onRefresh: ()
     </div>
   );
 }
-
