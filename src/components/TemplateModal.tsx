@@ -42,7 +42,7 @@ export default function TemplateModal({ template, onClose }: TemplateModalProps)
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-slate-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-700" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-slate-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-700 relative" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white z-10">
           <X size={20} />
         </button>
@@ -109,14 +109,14 @@ export default function TemplateModal({ template, onClose }: TemplateModalProps)
                 placeholder={t("payment.txhash.placeholder")}
                 value={txHash}
                 onChange={(e) => setTxHash(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white"
               />
               <input
                 type="email"
                 placeholder={t("payment.email")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white"
               />
               <button onClick={handleSubmit} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg">
                 {t("payment.submit")}

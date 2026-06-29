@@ -17,58 +17,43 @@ export default function Contact() {
   return (
     <section id="contact" className="py-24 bg-slate-950 text-white">
       <div className="container mx-auto px-4">
-        <div className="mb-12 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            {t("contact.title")}
-          </h2>
-          <p className="text-slate-400 max-w-2xl mx-auto">
-            {t("contact.subtitle")}
-          </p>
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("contact.title")}</h2>
+          <p className="text-slate-400 max-w-2xl mx-auto">{t("contact.subtitle")}</p>
         </div>
 
         <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12">
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: dir === "rtl" ? 50 : -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="space-y-6"
+            viewport={{ once: true }}
+            className={`space-y-6 ${dir === "rtl" ? "text-right" : ""}`}
           >
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-blue-600/20 rounded-xl text-blue-400">
+              <div className="p-3 bg-blue-600/20 rounded-lg text-blue-400">
                 <Mail size={24} />
               </div>
               <div>
                 <h3 className="font-bold mb-1">{t("contact.email")}</h3>
-                <a
-                  href={`mailto:${settings.email}`}
-                  className="text-slate-400 hover:text-blue-400 transition-colors"
-                >
-                  {settings.email}
-                </a>
+                <p className="text-slate-400">{settings.email}</p>
               </div>
             </div>
 
             {settings.telegramUrl && (
               <div className="flex items-start gap-4">
-                <div className="p-3 bg-blue-600/20 rounded-xl text-blue-400">
+                <div className="p-3 bg-blue-600/20 rounded-lg text-blue-400">
                   <TelegramIcon size={24} />
                 </div>
                 <div>
                   <h3 className="font-bold mb-1">Telegram</h3>
-                  <a
-                    href={settings.telegramUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 hover:text-blue-400 transition-colors"
-                  >
-                    @Abdulrhman0985
-                  </a>
+                  <p className="text-slate-400">@Abdulrhman0985</p>
                 </div>
               </div>
             )}
 
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-blue-600/20 rounded-xl text-blue-400">
+              <div className="p-3 bg-blue-600/20 rounded-lg text-blue-400">
                 <MapPin size={24} />
               </div>
               <div>
@@ -82,7 +67,7 @@ export default function Contact() {
                 href={settings.telegramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-medium transition-all mt-4"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
               >
                 <Send size={18} />
                 Contact on Telegram
@@ -90,44 +75,37 @@ export default function Contact() {
             )}
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
+          <motion.form
+            initial={{ opacity: 0, x: dir === "rtl" ? -50 : 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4"
+            onSubmit={(e) => e.preventDefault()}
           >
-            <form
-              className={`space-y-4 ${dir === "rtl" ? "text-right" : ""}`}
-              onSubmit={(e) => e.preventDefault()}
+            <input
+              type="text"
+              placeholder={t("contact.name")}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+            <input
+              type="text"
+              placeholder={t("contact.subject")}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+            <textarea
+              rows={4}
+              placeholder={t("contact.message")}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"
+            />
+            <button
+              type="submit"
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
             >
-              <input
-                type="text"
-                placeholder={t("contact.name")}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-              />
-              <input
-                type="email"
-                placeholder={t("contact.email")}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-              />
-              <input
-                type="text"
-                placeholder={t("contact.subject")}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-              />
-              <textarea
-                placeholder={t("contact.message")}
-                rows={4}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none resize-none"
-              />
-              <button
-                type="submit"
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-colors"
-              >
-                <Send size={18} />
-                {t("contact.send")}
-              </button>
-            </form>
-          </motion.div>
+              <Send size={18} />
+              {t("contact.send")}
+            </button>
+          </motion.form>
         </div>
       </div>
     </section>

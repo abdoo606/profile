@@ -314,93 +314,9 @@ export const defaultTemplates: TemplateData[] = [
       "Messaging UI",
     ],
   },
-  {
-    id: "9",
-    name: "Real Estate Pro",
-    description:
-      "Premium real estate website template with property listings and search filters.",
-    image:
-      "https://images.pexels.com/photos/1546168/pexels-photo-1546168.jpeg?auto=compress&cs=tinysrgb&w=800",
-    category: "Real Estate",
-    price: 79,
-    previewUrl: "#",
-    features: [
-      "Property Listings",
-      "Advanced Search",
-      "Map Integration",
-      "Agent Profiles",
-      "Mortgage Calculator",
-      "Virtual Tours",
-      "Lead Forms",
-      "Favorites",
-    ],
-  },
-  {
-    id: "10",
-    name: "Gym & Fitness",
-    description:
-      "Dynamic fitness website template for gyms, personal trainers, and wellness centers.",
-    image:
-      "https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=800",
-    category: "Fitness",
-    price: 55,
-    previewUrl: "#",
-    features: [
-      "Class Schedule",
-      "Trainer Profiles",
-      "Membership Plans",
-      "BMI Calculator",
-      "Workout Programs",
-      "Gallery",
-      "Testimonials",
-      "Contact Form",
-    ],
-  },
-  {
-    id: "11",
-    name: "Medical & Healthcare",
-    description:
-      "Professional healthcare website template for hospitals, clinics, and doctors.",
-    image:
-      "https://images.pexels.com/photos/4386467/pexels-photo-4386467.jpeg?auto=compress&cs=tinysrgb&w=800",
-    category: "Healthcare",
-    price: 69,
-    previewUrl: "#",
-    features: [
-      "Appointment Booking",
-      "Doctor Profiles",
-      "Departments",
-      "Services",
-      "Patient Portal",
-      "Emergency Info",
-      "Insurance",
-      "Blog",
-    ],
-  },
-  {
-    id: "12",
-    name: "Education & LMS",
-    description:
-      "Comprehensive learning management system template for online courses.",
-    image:
-      "https://images.pexels.com/photos/4145153/pexels-photo-4145153.jpeg?auto=compress&cs=tinysrgb&w=800",
-    category: "Education",
-    price: 89,
-    previewUrl: "#",
-    features: [
-      "Course Catalog",
-      "Video Lessons",
-      "Quizzes",
-      "Certificates",
-      "Student Dashboard",
-      "Instructor Panel",
-      "Progress Tracking",
-      "Reviews",
-    ],
-  },
 ];
 
-export interface PortfolioItemData {
+export interface PortfolioData {
   id: string;
   title: string;
   description: string;
@@ -409,7 +325,7 @@ export interface PortfolioItemData {
   link: string;
 }
 
-export const defaultPortfolio: PortfolioItemData[] = [
+export const defaultPortfolio: PortfolioData[] = [
   {
     id: "1",
     title: "E-Commerce Website Redesign",
@@ -424,7 +340,7 @@ export const defaultPortfolio: PortfolioItemData[] = [
     id: "2",
     title: "Corporate IT Infrastructure",
     description:
-      "Designed and implemented complete IT infrastructure for a 200+ employee company.",
+      "Designed and implemented complete IT infrastructure for a 200+ employee company including network, security, and cloud solutions.",
     image:
       "https://images.pexels.com/photos/325229/pexels-photo-325229.jpeg?auto=compress&cs=tinysrgb&w=800",
     category: "IT Solutions",
@@ -434,7 +350,7 @@ export const defaultPortfolio: PortfolioItemData[] = [
     id: "3",
     title: "Mobile Banking App UI",
     description:
-      "Designed intuitive mobile banking application interface with focus on accessibility.",
+      "Designed intuitive mobile banking application interface with focus on accessibility and user experience.",
     image:
       "https://images.pexels.com/photos/6289025/pexels-photo-6289025.jpeg?auto=compress&cs=tinysrgb&w=800",
     category: "UI/UX Design",

@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getTemplates,
-  addTemplate,
-  updateTemplate,
-  deleteTemplate,
-} from "@/lib/data";
+import { getTemplates, addTemplate, updateTemplate, deleteTemplate } from "@/lib/data";
 import { getSettings } from "@/lib/data";
 
 export async function GET() {

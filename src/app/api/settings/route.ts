@@ -10,7 +10,6 @@ export async function PUT(req: NextRequest) {
   const body = await req.json();
   const { password, ...data } = body;
 
-  // Verify admin password
   const settings = await getSettings();
   if (password !== settings.adminPassword) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

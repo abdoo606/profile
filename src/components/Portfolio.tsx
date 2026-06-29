@@ -12,14 +12,9 @@ export default function Portfolio() {
 
   if (portfolio.length === 0) return null;
 
-  const categories = [
-    "All",
-    ...Array.from(new Set(portfolio.map((p) => p.category))),
-  ];
+  const categories = ["All", ...Array.from(new Set(portfolio.map((p) => p.category)))];
   const filtered =
-    activeCategory === "All"
-      ? portfolio
-      : portfolio.filter((p) => p.category === activeCategory);
+    activeCategory === "All" ? portfolio : portfolio.filter((p) => p.category === activeCategory);
 
   return (
     <section id="portfolio" className="py-24 bg-slate-950 text-white">

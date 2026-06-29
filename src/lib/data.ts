@@ -1,11 +1,5 @@
 import { db } from "@/db";
-import {
-  siteSettings,
-  templates,
-  portfolioItems,
-  orders,
-  visitors,
-} from "@/db/schema";
+import { siteSettings, templates, portfolioItems, orders, visitors } from "@/db/schema";
 import { eq, desc, sql, gte } from "drizzle-orm";
 import { defaultSettings, type SiteSettingsData } from "@/db/defaults";
 import { seedIfEmpty } from "@/db/seed";
@@ -25,9 +19,7 @@ export async function getSettings(): Promise<SiteSettingsData> {
   }
 }
 
-export async function updateSettings(
-  data: Partial<SiteSettingsData>
-): Promise<void> {
+export async function updateSettings(data: Partial<SiteSettingsData>): Promise<void> {
   const current = await getSettings();
   const merged = { ...current, ...data };
   const existing = await db
@@ -36,10 +28,7 @@ export async function updateSettings(
     .where(eq(siteSettings.key, "main"))
     .limit(1);
   if (existing.length === 0) {
-    await db.insert(siteSettings).values({
-      key: "main",
-      value: JSON.stringify(merged),
-    });
+    await db.insert(siteSettings).values({ key: "main", value: JSON.stringify(merged) });
   } else {
     await db
       .update(siteSettings)
@@ -69,8 +58,7 @@ export async function addOrder(data: {
   txHash: string;
   amount: number;
 }) {
-  const externalId =
-    Date.now().toString(36) + Math.random().toString(36).substring(2);
+  const externalId = Date.now().toString(36) + Math.random().toString(36).substring(2);
   await db.insert(orders).values({
     externalId,
     templateId: data.templateId,
@@ -82,10 +70,7 @@ export async function addOrder(data: {
   });
 }
 
-export async function updateOrderStatus(
-  orderId: number,
-  status: string
-) {
+export async function updateOrderStatus(orderId: number, status: string) {
   const updateData: Record<string, unknown> = { status };
   if (status === "completed") {
     updateData.completedAt = new Date();
@@ -93,27 +78,17 @@ export async function updateOrderStatus(
   await db.update(orders).set(updateData).where(eq(orders.id, orderId));
 }
 
-export async function trackVisitor(
-  page: string,
-  device?: string,
-  referrer?: string
-) {
+export async function trackVisitor(page: string, device?: string, referrer?: string) {
   await db.insert(visitors).values({ page, device, referrer });
 }
 
 export async function getVisitorStats() {
   const now = new Date();
-  const todayStart = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate()
-  );
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
   const monthAgo = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const [totalResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(visitors);
+  const [totalResult] = await db.select({ count: sql<number>`count(*)::int` }).from(visitors);
   const [todayResult] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(visitors)
@@ -127,11 +102,7 @@ export async function getVisitorStats() {
     .from(visitors)
     .where(gte(visitors.createdAt, monthAgo));
 
-  const recent = await db
-    .select()
-    .from(visitors)
-    .orderBy(desc(visitors.createdAt))
-    .limit(50);
+  const recent = await db.select().from(visitors).orderBy(desc(visitors.createdAt)).limit(50);
 
   return {
     total: totalResult.count,
@@ -149,13 +120,10 @@ export async function getOrderStats() {
     pending: allOrders.filter((o) => o.status === "pending").length,
     completed: allOrders.filter((o) => o.status === "completed").length,
     rejected: allOrders.filter((o) => o.status === "rejected").length,
-    revenue: allOrders
-      .filter((o) => o.status === "completed")
-      .reduce((sum, o) => sum + o.amount, 0),
+    revenue: allOrders.filter((o) => o.status === "completed").reduce((sum, o) => sum + o.amount, 0),
   };
 }
 
-// Template CRUD
 export async function addTemplate(data: {
   name: string;
   description: string;
@@ -165,26 +133,11 @@ export async function addTemplate(data: {
   previewUrl: string;
   features: string[];
 }) {
-  const externalId =
-    Date.now().toString(36) + Math.random().toString(36).substring(2);
-  await db.insert(templates).values({
-    externalId,
-    ...data,
-  });
+  const externalId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+  await db.insert(templates).values({ externalId, ...data });
 }
 
-export async function updateTemplate(
-  id: number,
-  data: Partial<{
-    name: string;
-    description: string;
-    image: string;
-    category: string;
-    price: number;
-    previewUrl: string;
-    features: string[];
-  }>
-) {
+export async function updateTemplate(id: number, data: Partial<typeof templates.$inferInsert>) {
   await db.update(templates).set(data).where(eq(templates.id, id));
 }
 
@@ -192,7 +145,6 @@ export async function deleteTemplate(id: number) {
   await db.delete(templates).where(eq(templates.id, id));
 }
 
-// Portfolio CRUD
 export async function addPortfolioItem(data: {
   title: string;
   description: string;
@@ -200,28 +152,12 @@ export async function addPortfolioItem(data: {
   category: string;
   link: string;
 }) {
-  const externalId =
-    Date.now().toString(36) + Math.random().toString(36).substring(2);
-  await db.insert(portfolioItems).values({
-    externalId,
-    ...data,
-  });
+  const externalId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+  await db.insert(portfolioItems).values({ externalId, ...data });
 }
 
-export async function updatePortfolioItem(
-  id: number,
-  data: Partial<{
-    title: string;
-    description: string;
-    image: string;
-    category: string;
-    link: string;
-  }>
-) {
-  await db
-    .update(portfolioItems)
-    .set(data)
-    .where(eq(portfolioItems.id, id));
+export async function updatePortfolioItem(id: number, data: Partial<typeof portfolioItems.$inferInsert>) {
+  await db.update(portfolioItems).set(data).where(eq(portfolioItems.id, id));
 }
 
 export async function deletePortfolioItem(id: number) {

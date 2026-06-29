@@ -13,7 +13,6 @@ import Contact from "./Contact";
 import Footer from "./Footer";
 import AdminPanel from "./AdminPanel";
 
-// Types
 export interface TemplateRow {
   id: number;
   externalId: string;
@@ -38,7 +37,6 @@ export interface PortfolioRow {
   createdAt: string | null;
 }
 
-// Language Context
 interface LanguageContextType {
   lang: Language;
   setLang: (lang: Language) => void;
@@ -46,9 +44,7 @@ interface LanguageContextType {
   dir: "ltr" | "rtl";
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(
-  undefined
-);
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function useLanguage() {
   const ctx = useContext(LanguageContext);
@@ -56,7 +52,6 @@ export function useLanguage() {
   return ctx;
 }
 
-// Site Data Context
 interface SiteDataContextType {
   settings: SiteSettingsData;
   templates: TemplateRow[];
@@ -64,9 +59,7 @@ interface SiteDataContextType {
   refreshData: () => Promise<void>;
 }
 
-const SiteDataContext = createContext<SiteDataContextType | undefined>(
-  undefined
-);
+const SiteDataContext = createContext<SiteDataContextType | undefined>(undefined);
 
 export function useSiteData() {
   const ctx = useContext(SiteDataContext);
@@ -89,12 +82,13 @@ export default function ClientApp({
   const [settings, setSettings] = useState(initialSettings);
   const [templatesList, setTemplates] = useState(initialTemplates);
   const [portfolioList, setPortfolio] = useState(initialPortfolio);
-
   const [lang, setLangState] = useState<Language>("en");
+
   const setLang = (l: Language) => {
     setLangState(l);
     if (typeof window !== "undefined") localStorage.setItem("portfolio_language", l);
   };
+
   const t = (key: string) => getTranslation(lang, key);
   const dir = languages.find((l) => l.code === lang)?.dir || "ltr";
 
@@ -112,16 +106,13 @@ export default function ClientApp({
     document.documentElement.dir = dir;
   }, [lang, dir]);
 
-  // Track visitor
   useEffect(() => {
     fetch("/api/visitors", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         page: window.location.pathname,
-        device: /Mobile|Android|iPhone/i.test(navigator.userAgent)
-          ? "Mobile"
-          : "Desktop",
+        device: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? "Mobile" : "Desktop",
         referrer: document.referrer || "Direct",
       }),
     }).catch(() => {});
@@ -140,14 +131,7 @@ export default function ClientApp({
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t, dir }}>
-      <SiteDataContext.Provider
-        value={{
-          settings,
-          templates: templatesList,
-          portfolio: portfolioList,
-          refreshData,
-        }}
-      >
+      <SiteDataContext.Provider value={{ settings, templates: templatesList, portfolio: portfolioList, refreshData }}>
         <Navbar onAdminClick={() => setAdminOpen(true)} />
         <Hero />
         <About />
@@ -157,12 +141,7 @@ export default function ClientApp({
         <Contact />
         <Footer />
         {adminOpen && (
-          <AdminPanel
-            onClose={() => {
-              setAdminOpen(false);
-              refreshData();
-            }}
-          />
+          <AdminPanel onClose={() => { setAdminOpen(false); refreshData(); }} />
         )}
       </SiteDataContext.Provider>
     </LanguageContext.Provider>

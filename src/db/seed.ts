@@ -1,20 +1,16 @@
 import { db } from "@/db";
 import { siteSettings, templates, portfolioItems } from "@/db/schema";
 import { defaultSettings, defaultTemplates, defaultPortfolio } from "@/db/defaults";
-import { sql } from "drizzle-orm";
 
 export async function seedIfEmpty() {
-  // Check if settings exist
   const existing = await db.select().from(siteSettings).limit(1);
   if (existing.length > 0) return;
 
-  // Seed settings as JSON blob
   await db.insert(siteSettings).values({
     key: "main",
     value: JSON.stringify(defaultSettings),
   });
 
-  // Seed templates
   for (const t of defaultTemplates) {
     await db.insert(templates).values({
       externalId: t.id,
@@ -28,7 +24,6 @@ export async function seedIfEmpty() {
     });
   }
 
-  // Seed portfolio
   for (const p of defaultPortfolio) {
     await db.insert(portfolioItems).values({
       externalId: p.id,

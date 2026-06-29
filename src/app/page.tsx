@@ -10,11 +10,11 @@ export default async function HomePage() {
     getPortfolio(),
   ]);
 
-  // Serialize dates for client
   const templates = rawTemplates.map((t) => ({
     ...t,
     createdAt: t.createdAt ? t.createdAt.toISOString() : null,
   }));
+
   const portfolio = rawPortfolio.map((p) => ({
     ...p,
     createdAt: p.createdAt ? p.createdAt.toISOString() : null,
